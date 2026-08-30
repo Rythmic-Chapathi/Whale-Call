@@ -19,6 +19,25 @@ import type {
 
 export type { Coordinate, Dock };
 
+// Holding points keep fleet markers in open water while staying close to their
+// actual home island. These are deliberately offshore from the public docks.
+export const OFFSHORE_FLEET_ANCHORS: Record<string, Coordinate> = {
+  "coral-cove": { lat: 18.045, lng: -63.135 },
+  "pelican-key": { lat: 18.135, lng: -63.09 },
+  "mango-harbor": { lat: 17.855, lng: -62.84 },
+  "starfish-bay": { lat: 17.445, lng: -62.975 },
+  "lighthouse-isle": { lat: 17.245, lng: -62.75 },
+  "turtle-point": { lat: 17.1, lng: -62.62 },
+  "driftwood-island": { lat: 17.17, lng: -61.84 },
+};
+
+export function offshorePositionForIsland(islandId: string, slot = 0): Coordinate {
+  const anchor = OFFSHORE_FLEET_ANCHORS[islandId] ?? { lat: 17.8, lng: -62.75 };
+  const latOffset = ((slot % 5) - 2) * 0.006;
+  const lngOffset = (Math.floor(slot / 5) - 1) * 0.008;
+  return { lat: anchor.lat + latOffset, lng: anchor.lng + lngOffset };
+}
+
 export const ISLAND_SEED: Array<{
   id: string;
   name: string;
@@ -201,6 +220,13 @@ export async function seedFleet(): Promise<void> {
 
   const [{ value }] = await db.select({ value: count() }).from(boatsTable);
   if (Number(value) > 0) {
+    const existingBoats = await db.select().from(boatsTable).orderBy(asc(boatsTable.id));
+    for (const [index, boat] of existingBoats.entries()) {
+      const island = ISLAND_SEED.find((entry) => entry.id === boat.homeIslandId);
+      if (!island) continue;
+      const position = offshorePositionForIsland(island.id, Math.floor(index / ISLAND_SEED.length));
+      await db.update(boatsTable).set({ lat: position.lat, lng: position.lng }).where(eq(boatsTable.id, boat.id));
+    }
     const rescueBoats = await db
       .select()
       .from(boatsTable)
@@ -236,14 +262,14 @@ export async function seedFleet(): Promise<void> {
     const config = CLASS_CONFIG[index % CLASS_CONFIG.length];
     const island = ISLAND_SEED[index % ISLAND_SEED.length];
     const rescue = config.boatClass === "rescue";
-    const offset = ((index % 6) - 2.5) * 0.004;
+    const position = offshorePositionForIsland(island.id, Math.floor(index / ISLAND_SEED.length));
     return {
       id: `boat-${index + 1}`,
       name: `${config.label} ${String(index + 1).padStart(2, "0")}`,
       boatClass: config.boatClass,
       capacity: config.capacity,
-      lat: island.center.lat + offset,
-      lng: island.center.lng + ((index % 5) - 2) * 0.005,
+      lat: position.lat,
+      lng: position.lng,
       heading: (index * 47) % 360,
       status: rescue ? "available" : index % 17 === 0 ? "en_route" : index % 23 === 0 ? "offline" : "available",
       driverId: `driver-${index + 1}`,

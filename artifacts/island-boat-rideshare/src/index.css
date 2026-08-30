@@ -275,8 +275,8 @@
 
 .boat-marker-frame {
   display: grid;
-  width: 58px;
-  height: 42px;
+  width: 42px;
+  height: 32px;
   place-items: center;
   border: 2px solid var(--boat-status);
   border-radius: 999px;
@@ -286,8 +286,8 @@
 }
 
 .boat-marker-frame img {
-  width: 50px;
-  height: 31px;
+  width: 36px;
+  height: 23px;
   object-fit: contain;
   transform: rotate(calc(var(--boat-heading) * -1));
 }

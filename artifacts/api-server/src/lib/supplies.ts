@@ -10,7 +10,7 @@ import {
   type SupplyOrderRow,
 } from "@workspace/db";
 import type { Coordinate, SupplyOrder, SupplyOrderInput } from "@workspace/api-zod";
-import { getApiBoat, haversineKm } from "./fleet";
+import { getApiBoat, haversineKm, offshorePositionForIsland } from "./fleet";
 import { logger } from "./logger";
 import { priorityReason, priorityScore } from "./supplyPriority";
 
@@ -156,17 +156,21 @@ export async function hydrateSupplyOrder(order: SupplyOrderRow): Promise<SupplyO
   const etaMinutes = order.status === "delivered" ? 0 : order.targetDeliveryAt ? Math.max(0, Math.ceil((order.targetDeliveryAt.getTime() - now.getTime()) / 60_000)) : null;
   if (boat && order.status === "loading") {
     const pickup = depots.find(depot => depot.id === order.lines[order.lines.length - 1]?.depotId);
-    if (pickup) boat = { ...boat, position: { lat: pickup.lat, lng: pickup.lng } };
+    if (pickup) boat = { ...boat, position: offshorePositionForIsland(pickup.islandId, order.lines.length) };
   } else if (boat && order.status === "in_transit" && order.targetDeliveryAt) {
     const pickup = depots.find(depot => depot.id === order.lines[order.lines.length - 1]?.depotId);
     if (pickup) {
       const transitStart = order.createdAt.getTime() + 60_000;
       const progress = Math.max(0, Math.min(1, (now.getTime() - transitStart) / (order.targetDeliveryAt.getTime() - transitStart)));
+      const pickupPosition = offshorePositionForIsland(pickup.islandId, order.lines.length);
+      const destinationPosition = order.destinationIslandId
+        ? offshorePositionForIsland(order.destinationIslandId, order.lines.length + 1)
+        : { lat: order.destinationLat, lng: order.destinationLng };
       boat = {
         ...boat,
         position: {
-          lat: pickup.lat + (order.destinationLat - pickup.lat) * progress,
-          lng: pickup.lng + (order.destinationLng - pickup.lng) * progress,
+          lat: pickupPosition.lat + (destinationPosition.lat - pickupPosition.lat) * progress,
+          lng: pickupPosition.lng + (destinationPosition.lng - pickupPosition.lng) * progress,
         },
       };
     }

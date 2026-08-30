@@ -75,8 +75,10 @@ export function CaribbeanMap({
       L.marker([boat.position.lat, boat.position.lng], { icon, title: `${boat.name} · ${boat.status.replace('_', ' ')}` }).addTo(markerGroup);
     }
 
-    const pickup = islands.find(island => island.id === pickupId)?.center;
-    const destination = islands.find(island => island.id === destinationId)?.center;
+    const pickupIsland = islands.find(island => island.id === pickupId);
+    const destinationIsland = islands.find(island => island.id === destinationId);
+    const pickup = pickupIsland?.docks?.[0]?.position ?? pickupIsland?.center;
+    const destination = destinationIsland?.docks?.[0]?.position ?? destinationIsland?.center;
     const points = [pickup, destination, targetPosition].filter(Boolean) as Coordinate[];
     if (points.length >= 2) {
       L.polyline(points.map(point => [point.lat, point.lng] as [number, number]), {
