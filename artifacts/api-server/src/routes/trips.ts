@@ -117,13 +117,13 @@ router.post("/trips", async (req, res): Promise<void> => {
   );
   const classMultiplier =
     parsed.data.boatClass === "speedboat"
-      ? 1.8
+      ? 1.35
       : parsed.data.boatClass === "catamaran"
-        ? 1.5
+        ? 1.2
         : parsed.data.boatClass === "cruiser"
-          ? 1.25
+          ? 1.1
           : 1;
-  const price = Number((18 + distanceKm * 6.2 * classMultiplier).toFixed(2));
+  const price = Number((6 + distanceKm * 1.75 * classMultiplier).toFixed(2));
   const etaMinutes = Math.max(3, Math.ceil(haversineKm(pickupDock.position, {
     lat: available.lat,
     lng: available.lng,

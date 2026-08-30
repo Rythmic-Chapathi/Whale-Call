@@ -126,7 +126,7 @@ export function SupplyRequestPage() {
   return <main className="mx-auto max-w-[1180px] px-5 py-10 lg:px-8 lg:py-14">
     <div className="grid gap-8 lg:grid-cols-[.68fr_1.32fr]">
       <aside>
-        <SectionLabel>Supply mode · island essentials</SectionLabel>
+        <SectionLabel>Island essentials</SectionLabel>
         <h1 className="mt-4 font-display text-5xl font-semibold leading-[.94] tracking-[-.05em]">Get what the<br />island needs.</h1>
         <p className="mt-5 max-w-sm text-sm leading-6 text-muted-foreground">We find the nearest stocked shelf, match the load to a local boat, and keep you on the run from depot to dock.</p>
         <div className="mt-8 rounded-[28px] border border-amber-900/10 bg-amber-50/80 p-5">

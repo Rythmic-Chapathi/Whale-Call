@@ -268,7 +268,7 @@ export async function createSupplyOrder(input: SupplyOrderInput): Promise<Supply
     distanceKm += haversineKm({ lat: lastDepot.lat, lng: lastDepot.lng }, input.destinationPosition);
     distanceKm = Number(distanceKm.toFixed(1));
     const etaMinutes = Math.max(5, Math.ceil(distanceKm / (SPEED_KMH[boat.boatClass] ?? 30) * 60) + 3);
-    const fare = input.linkedEmergencyId ? 0 : Number((12 + distanceKm * 1.1 + totalWeightKg * 0.35).toFixed(2));
+    const fare = input.linkedEmergencyId ? 0 : Number((6 + distanceKm * 0.65 + totalWeightKg * 0.15).toFixed(2));
     const now = new Date();
     const id = `run-${Date.now().toString(36)}`;
     await db.transaction(async tx => {
