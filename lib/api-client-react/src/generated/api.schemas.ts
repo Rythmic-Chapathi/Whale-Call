@@ -100,8 +100,142 @@ export interface FleetSummary {
   total: number;
   available: number;
   onTrip: number;
-  rescueReady: number;
   activeIslands: number;
+}
+
+export type DriverApplicationStatus = typeof DriverApplicationStatus[keyof typeof DriverApplicationStatus];
+
+
+export const DriverApplicationStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type DriverApplicationInputBoatClassesItem = typeof DriverApplicationInputBoatClassesItem[keyof typeof DriverApplicationInputBoatClassesItem];
+
+
+export const DriverApplicationInputBoatClassesItem = {
+  water_taxi: 'water_taxi',
+  cruiser: 'cruiser',
+  catamaran: 'catamaran',
+  speedboat: 'speedboat',
+} as const;
+
+export interface DriverApplicationInput {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  fullName: string;
+  email: string;
+  /**
+     * @minLength 7
+     * @maxLength 30
+     */
+  phone: string;
+  homeIslandId: string;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  yearsExperience: number;
+  /** @minItems 1 */
+  boatClasses: DriverApplicationInputBoatClassesItem[];
+  /** @minItems 1 */
+  languages: string[];
+  /** @minItems 1 */
+  certifications: DriverCertification[];
+  /**
+     * @minLength 2
+     * @maxLength 160
+     */
+  availability: string;
+  /**
+     * @minLength 80
+     * @maxLength 2000
+     */
+  experience: string;
+  /**
+     * @minLength 80
+     * @maxLength 2000
+     */
+  safetyRecord: string;
+  /**
+     * @minLength 80
+     * @maxLength 2000
+     */
+  motivation: string;
+  consent: true;
+}
+
+export type DriverApplication = DriverApplicationInput & ({
+  id: string;
+  status: DriverApplicationStatus;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  driverId: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+});
+
+export interface DriverApplicationDecision {
+  application: DriverApplication;
+  driver: Driver | null;
+}
+
+export interface DriverApplicationRejection {
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export interface DriverReviewInput {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface DriverReview {
+  id: string;
+  driverId: string;
+  reviewerName: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+}
+
+export interface DriverReviewPage {
+  reviews: DriverReview[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
+}
+
+export type DriverProfileDistribution = {[key: string]: number};
+
+export type DriverProfile = Driver & ({
+  reviewCount: number;
+  distribution: DriverProfileDistribution;
+  canReview: boolean;
+  /** @nullable */
+  reviewBlockReason: string | null;
+});
+
+export interface StructuredError {
+  error: string;
+  code: string;
+  /** @nullable */
+  field: string | null;
 }
 
 export type TripInputBoatClass = typeof TripInputBoatClass[keyof typeof TripInputBoatClass];
@@ -362,6 +496,10 @@ export type ListFleetParams = {
 boatClass?: BoatClass;
 status?: BoatStatus;
 emergencyEquipped?: boolean;
+};
+
+export type ListDriverApplicationsParams = {
+status?: DriverApplicationStatus;
 };
 
 export type GetSupplyAvailabilityParams = {

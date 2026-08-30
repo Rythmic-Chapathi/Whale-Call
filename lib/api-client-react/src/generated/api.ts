@@ -20,6 +20,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DriverApplication,
+  DriverApplicationDecision,
+  DriverApplicationInput,
+  DriverApplicationRejection,
+  DriverProfile,
+  DriverReview,
+  DriverReviewInput,
+  DriverReviewPage,
   EmergencyIncident,
   EmergencyInput,
   EmergencySupplyInput,
@@ -28,10 +36,12 @@ import type {
   GetSupplyAvailabilityParams,
   HealthStatus,
   Island,
+  ListDriverApplicationsParams,
   ListFleetParams,
   LocationSearchResult,
   ResetDemo200,
   SearchLocationsParams,
+  StructuredError,
   SupplyAvailability,
   SupplyCatalogItem,
   SupplyDepot,
@@ -52,7 +62,6 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
-
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
@@ -69,8 +78,6 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export const getHealthCheckUrl = () => {
-
-
 
 
   return `/api/healthz`
@@ -92,9 +99,6 @@ export const healthCheck = async ( options?: Parameters<typeof customFetch>[1]):
 );}
 
 
-
-
-
 export const getHealthCheckQueryKey = () => {
     return [
     `/api/healthz`
@@ -110,11 +114,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
@@ -139,11 +139,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getSearchLocationsUrl = (params: SearchLocationsParams,) => {
@@ -176,9 +171,6 @@ export const searchLocations = async (params: SearchLocationsParams, options?: P
 );}
 
 
-
-
-
 export const getSearchLocationsQueryKey = (params?: SearchLocationsParams,) => {
     return [
     `/api/geocode/search`, ...(params ? [params] : [])
@@ -194,11 +186,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getSearchLocationsQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof searchLocations>>> = ({ signal }) => searchLocations(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchLocations>>, TError, TData> & { queryKey: QueryKey }
@@ -225,14 +213,7 @@ export function useSearchLocations<TData = Awaited<ReturnType<typeof searchLocat
 }
 
 
-
-
-
-
-
 export const getListIslandsUrl = () => {
-
-
 
 
   return `/api/islands`
@@ -253,9 +234,6 @@ export const listIslands = async ( options?: Parameters<typeof customFetch>[1]):
 );}
 
 
-
-
-
 export const getListIslandsQueryKey = () => {
     return [
     `/api/islands`
@@ -271,11 +249,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListIslandsQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listIslands>>> = ({ signal }) => listIslands({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIslands>>, TError, TData> & { queryKey: QueryKey }
@@ -300,11 +274,6 @@ export function useListIslands<TData = Awaited<ReturnType<typeof listIslands>>, 
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getListFleetUrl = (params?: ListFleetParams,) => {
@@ -337,9 +306,6 @@ export const listFleet = async (params?: ListFleetParams, options?: Parameters<t
 );}
 
 
-
-
-
 export const getListFleetQueryKey = (params?: ListFleetParams,) => {
     return [
     `/api/fleet`, ...(params ? [params] : [])
@@ -355,11 +321,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListFleetQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listFleet>>> = ({ signal }) => listFleet(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFleet>>, TError, TData> & { queryKey: QueryKey }
@@ -386,14 +348,7 @@ export function useListFleet<TData = Awaited<ReturnType<typeof listFleet>>, TErr
 }
 
 
-
-
-
-
-
 export const getGetFleetSummaryUrl = () => {
-
-
 
 
   return `/api/fleet/summary`
@@ -414,9 +369,6 @@ export const getFleetSummary = async ( options?: Parameters<typeof customFetch>[
 );}
 
 
-
-
-
 export const getGetFleetSummaryQueryKey = () => {
     return [
     `/api/fleet/summary`
@@ -432,11 +384,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetFleetSummaryQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getFleetSummary>>> = ({ signal }) => getFleetSummary({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFleetSummary>>, TError, TData> & { queryKey: QueryKey }
@@ -463,14 +411,7 @@ export function useGetFleetSummary<TData = Awaited<ReturnType<typeof getFleetSum
 }
 
 
-
-
-
-
-
 export const getGetFleetBoatUrl = (boatId: string,) => {
-
-
 
 
   return `/api/fleet/${boatId}`
@@ -491,9 +432,6 @@ export const getFleetBoat = async (boatId: string, options?: Parameters<typeof c
 );}
 
 
-
-
-
 export const getGetFleetBoatQueryKey = (boatId: string,) => {
     return [
     `/api/fleet/${boatId}`
@@ -509,11 +447,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetFleetBoatQueryKey(boatId);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getFleetBoat>>> = ({ signal }) => getFleetBoat(boatId, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: boatId !== null && boatId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFleetBoat>>, TError, TData> & { queryKey: QueryKey }
@@ -539,15 +473,14 @@ export function useGetFleetBoat<TData = Awaited<ReturnType<typeof getFleetBoat>>
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+export const getCreateDriverApplicationUrl = () => {
 
 
-
-
+  return `/api/drivers/applications`
+}
 
 
 export const getListCompletedTripsUrl = () => {
-
-
 
 
   return `/api/trips`
@@ -568,9 +501,6 @@ export const listCompletedTrips = async ( options?: Parameters<typeof customFetc
 );}
 
 
-
-
-
 export const getListCompletedTripsQueryKey = () => {
     return [
     `/api/trips`
@@ -586,11 +516,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCompletedTripsQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCompletedTrips>>> = ({ signal }) => listCompletedTrips({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCompletedTrips>>, TError, TData> & { queryKey: QueryKey }
@@ -617,14 +543,7 @@ export function useListCompletedTrips<TData = Awaited<ReturnType<typeof listComp
 }
 
 
-
-
-
-
-
 export const getCreateTripUrl = () => {
-
-
 
 
   return `/api/trips`
@@ -645,9 +564,6 @@ export const createTrip = async (tripInput: TripInput, options?: Parameters<type
 );}
 
 
-
-
-
 export const getCreateTripMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTrip>>, TError,{data: BodyType<TripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createTrip>>, TError,{data: BodyType<TripInput>}, TContext> => {
@@ -660,17 +576,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTrip>>, {data: BodyType<TripInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createTrip(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -696,8 +606,6 @@ export const useCreateTrip = <TError = ErrorType<void>,
 export const getGetTripUrl = (tripId: string,) => {
 
 
-
-
   return `/api/trips/${tripId}`
 }
 
@@ -716,9 +624,6 @@ export const getTrip = async (tripId: string, options?: Parameters<typeof custom
 );}
 
 
-
-
-
 export const getGetTripQueryKey = (tripId: string,) => {
     return [
     `/api/trips/${tripId}`
@@ -734,11 +639,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetTripQueryKey(tripId);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrip>>> = ({ signal }) => getTrip(tripId, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: tripId !== null && tripId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTrip>>, TError, TData> & { queryKey: QueryKey }
@@ -765,14 +666,7 @@ export function useGetTrip<TData = Awaited<ReturnType<typeof getTrip>>, TError =
 }
 
 
-
-
-
-
-
 export const getCompleteTripUrl = (tripId: string,) => {
-
-
 
 
   return `/api/trips/${tripId}/complete`
@@ -793,9 +687,6 @@ export const completeTrip = async (tripId: string, options?: Parameters<typeof c
 );}
 
 
-
-
-
 export const getCompleteTripMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeTrip>>, TError,{tripId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof completeTrip>>, TError,{tripId: string}, TContext> => {
@@ -808,17 +699,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeTrip>>, {tripId: string}> = (props) => {
           const {tripId} = props ?? {};
 
           return  completeTrip(tripId,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -844,8 +729,6 @@ export const useCompleteTrip = <TError = ErrorType<void>,
 export const getCreateEmergencyUrl = () => {
 
 
-
-
   return `/api/emergencies`
 }
 
@@ -864,9 +747,6 @@ export const createEmergency = async (emergencyInput: EmergencyInput, options?: 
 );}
 
 
-
-
-
 export const getCreateEmergencyMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEmergency>>, TError,{data: BodyType<EmergencyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createEmergency>>, TError,{data: BodyType<EmergencyInput>}, TContext> => {
@@ -879,17 +759,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEmergency>>, {data: BodyType<EmergencyInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createEmergency(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -915,8 +789,6 @@ export const useCreateEmergency = <TError = ErrorType<void>,
 export const getGetEmergencyUrl = (emergencyId: string,) => {
 
 
-
-
   return `/api/emergencies/${emergencyId}`
 }
 
@@ -935,9 +807,6 @@ export const getEmergency = async (emergencyId: string, options?: Parameters<typ
 );}
 
 
-
-
-
 export const getGetEmergencyQueryKey = (emergencyId: string,) => {
     return [
     `/api/emergencies/${emergencyId}`
@@ -953,11 +822,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetEmergencyQueryKey(emergencyId);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmergency>>> = ({ signal }) => getEmergency(emergencyId, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: emergencyId !== null && emergencyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmergency>>, TError, TData> & { queryKey: QueryKey }
@@ -984,14 +849,7 @@ export function useGetEmergency<TData = Awaited<ReturnType<typeof getEmergency>>
 }
 
 
-
-
-
-
-
 export const getResolveEmergencyUrl = (emergencyId: string,) => {
-
-
 
 
   return `/api/emergencies/${emergencyId}/resolve`
@@ -1012,9 +870,6 @@ export const resolveEmergency = async (emergencyId: string, options?: Parameters
 );}
 
 
-
-
-
 export const getResolveEmergencyMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveEmergency>>, TError,{emergencyId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof resolveEmergency>>, TError,{emergencyId: string}, TContext> => {
@@ -1027,17 +882,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveEmergency>>, {emergencyId: string}> = (props) => {
           const {emergencyId} = props ?? {};
 
           return  resolveEmergency(emergencyId,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1063,8 +912,6 @@ export const useResolveEmergency = <TError = ErrorType<void>,
 export const getListSupplyCatalogUrl = () => {
 
 
-
-
   return `/api/supplies/catalog`
 }
 
@@ -1083,9 +930,6 @@ export const listSupplyCatalog = async ( options?: Parameters<typeof customFetch
 );}
 
 
-
-
-
 export const getListSupplyCatalogQueryKey = () => {
     return [
     `/api/supplies/catalog`
@@ -1101,11 +945,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListSupplyCatalogQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupplyCatalog>>> = ({ signal }) => listSupplyCatalog({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupplyCatalog>>, TError, TData> & { queryKey: QueryKey }
@@ -1132,14 +972,7 @@ export function useListSupplyCatalog<TData = Awaited<ReturnType<typeof listSuppl
 }
 
 
-
-
-
-
-
 export const getListSupplyDepotsUrl = () => {
-
-
 
 
   return `/api/supplies/depots`
@@ -1160,9 +993,6 @@ export const listSupplyDepots = async ( options?: Parameters<typeof customFetch>
 );}
 
 
-
-
-
 export const getListSupplyDepotsQueryKey = () => {
     return [
     `/api/supplies/depots`
@@ -1178,11 +1008,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListSupplyDepotsQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupplyDepots>>> = ({ signal }) => listSupplyDepots({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupplyDepots>>, TError, TData> & { queryKey: QueryKey }
@@ -1207,11 +1033,6 @@ export function useListSupplyDepots<TData = Awaited<ReturnType<typeof listSupply
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getGetSupplyAvailabilityUrl = (params: GetSupplyAvailabilityParams,) => {
@@ -1244,9 +1065,6 @@ export const getSupplyAvailability = async (params: GetSupplyAvailabilityParams,
 );}
 
 
-
-
-
 export const getGetSupplyAvailabilityQueryKey = (params?: GetSupplyAvailabilityParams,) => {
     return [
     `/api/supplies/availability`, ...(params ? [params] : [])
@@ -1262,11 +1080,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetSupplyAvailabilityQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyAvailability>>> = ({ signal }) => getSupplyAvailability(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyAvailability>>, TError, TData> & { queryKey: QueryKey }
@@ -1293,14 +1107,7 @@ export function useGetSupplyAvailability<TData = Awaited<ReturnType<typeof getSu
 }
 
 
-
-
-
-
-
 export const getCreateSupplyOrderUrl = () => {
-
-
 
 
   return `/api/supplies/orders`
@@ -1321,9 +1128,6 @@ export const createSupplyOrder = async (supplyOrderInput: SupplyOrderInput, opti
 );}
 
 
-
-
-
 export const getCreateSupplyOrderMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupplyOrder>>, TError,{data: BodyType<SupplyOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createSupplyOrder>>, TError,{data: BodyType<SupplyOrderInput>}, TContext> => {
@@ -1336,17 +1140,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSupplyOrder>>, {data: BodyType<SupplyOrderInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createSupplyOrder(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1372,8 +1170,6 @@ export const useCreateSupplyOrder = <TError = ErrorType<void>,
 export const getGetSupplyOrderUrl = (supplyOrderId: string,) => {
 
 
-
-
   return `/api/supplies/orders/${supplyOrderId}`
 }
 
@@ -1392,9 +1188,6 @@ export const getSupplyOrder = async (supplyOrderId: string, options?: Parameters
 );}
 
 
-
-
-
 export const getGetSupplyOrderQueryKey = (supplyOrderId: string,) => {
     return [
     `/api/supplies/orders/${supplyOrderId}`
@@ -1410,11 +1203,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetSupplyOrderQueryKey(supplyOrderId);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyOrder>>> = ({ signal }) => getSupplyOrder(supplyOrderId, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: supplyOrderId !== null && supplyOrderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyOrder>>, TError, TData> & { queryKey: QueryKey }
@@ -1441,14 +1230,7 @@ export function useGetSupplyOrder<TData = Awaited<ReturnType<typeof getSupplyOrd
 }
 
 
-
-
-
-
-
 export const getCancelSupplyOrderUrl = (supplyOrderId: string,) => {
-
-
 
 
   return `/api/supplies/orders/${supplyOrderId}/cancel`
@@ -1469,9 +1251,6 @@ export const cancelSupplyOrder = async (supplyOrderId: string, options?: Paramet
 );}
 
 
-
-
-
 export const getCancelSupplyOrderMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof cancelSupplyOrder>>, TError,{supplyOrderId: string}, TContext> => {
@@ -1484,17 +1263,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelSupplyOrder>>, {supplyOrderId: string}> = (props) => {
           const {supplyOrderId} = props ?? {};
 
           return  cancelSupplyOrder(supplyOrderId,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1520,8 +1293,6 @@ export const useCancelSupplyOrder = <TError = ErrorType<unknown>,
 export const getAgeSupplyOrderUrl = (supplyOrderId: string,) => {
 
 
-
-
   return `/api/supplies/orders/${supplyOrderId}/age`
 }
 
@@ -1540,9 +1311,6 @@ export const ageSupplyOrder = async (supplyOrderId: string, options?: Parameters
 );}
 
 
-
-
-
 export const getAgeSupplyOrderMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ageSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof ageSupplyOrder>>, TError,{supplyOrderId: string}, TContext> => {
@@ -1555,17 +1323,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof ageSupplyOrder>>, {supplyOrderId: string}> = (props) => {
           const {supplyOrderId} = props ?? {};
 
           return  ageSupplyOrder(supplyOrderId,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1591,8 +1353,6 @@ export const useAgeSupplyOrder = <TError = ErrorType<unknown>,
 export const getGetSupplyQueueUrl = () => {
 
 
-
-
   return `/api/supplies/queue`
 }
 
@@ -1611,9 +1371,6 @@ export const getSupplyQueue = async ( options?: Parameters<typeof customFetch>[1
 );}
 
 
-
-
-
 export const getGetSupplyQueueQueryKey = () => {
     return [
     `/api/supplies/queue`
@@ -1629,11 +1386,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetSupplyQueueQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyQueue>>> = ({ signal }) => getSupplyQueue({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyQueue>>, TError, TData> & { queryKey: QueryKey }
@@ -1660,14 +1413,7 @@ export function useGetSupplyQueue<TData = Awaited<ReturnType<typeof getSupplyQue
 }
 
 
-
-
-
-
-
 export const getAttachEmergencySuppliesUrl = (emergencyId: string,) => {
-
-
 
 
   return `/api/emergencies/${emergencyId}/supplies`
@@ -1689,9 +1435,6 @@ export const attachEmergencySupplies = async (emergencyId: string,
 );}
 
 
-
-
-
 export const getAttachEmergencySuppliesMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachEmergencySupplies>>, TError,{emergencyId: string;data: BodyType<EmergencySupplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof attachEmergencySupplies>>, TError,{emergencyId: string;data: BodyType<EmergencySupplyInput>}, TContext> => {
@@ -1704,17 +1447,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachEmergencySupplies>>, {emergencyId: string;data: BodyType<EmergencySupplyInput>}> = (props) => {
           const {emergencyId,data} = props ?? {};
 
           return  attachEmergencySupplies(emergencyId,data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1740,8 +1477,6 @@ export const useAttachEmergencySupplies = <TError = ErrorType<unknown>,
 export const getResetDemoUrl = () => {
 
 
-
-
   return `/api/dev/reset`
 }
 
@@ -1760,9 +1495,6 @@ export const resetDemo = async ( options?: Parameters<typeof customFetch>[1]): P
 );}
 
 
-
-
-
 export const getResetDemoMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof resetDemo>>, TError,void, TContext> => {
@@ -1775,17 +1507,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetDemo>>, void> = () => {
 
 
           return  resetDemo(requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1808,3 +1534,435 @@ export const useResetDemo = <TError = ErrorType<unknown>,
       return useMutation(getResetDemoMutationOptions(options));
     }
 
+
+    /**
+ * @summary Approve a captain application and create a driver
+ */
+export const useApproveDriverApplication = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDriverApplication>>, TError,{applicationId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveDriverApplication>>,
+        TError,
+        {applicationId: string},
+        TContext
+      > => {
+      return useMutation(getApproveDriverApplicationMutationOptions(options));
+    }
+
+/**
+ * @summary List newest reviews for a captain
+ */
+
+export function useListDriverReviews<TData = Awaited<ReturnType<typeof listDriverReviews>>, TError = ErrorType<StructuredError>>(
+ driverId: string,
+    page: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDriverReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDriverReviewsQueryOptions(driverId,page,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCreateDriverReviewUrl = (driverId: string,) => {
+
+
+  return `/api/drivers/${driverId}/reviews`
+}
+
+/**
+ * @summary Get a captain profile and rating summary
+ */
+
+export function useGetDriverProfile<TData = Awaited<ReturnType<typeof getDriverProfile>>, TError = ErrorType<StructuredError>>(
+ driverId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDriverProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDriverProfileQueryOptions(driverId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getListDriverApplicationsUrl = (params?: ListDriverApplicationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/drivers/applications?${stringifiedParams}` : `/api/drivers/applications`
+}
+
+/**
+ * @summary Leave a review for a captain
+ */
+export const createDriverReview = async (driverId: string,
+    driverReviewInput: DriverReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<DriverReview> => {
+
+  return customFetch<DriverReview>(getCreateDriverReviewUrl(driverId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(driverReviewInput)
+  }
+);}
+
+    export type CreateDriverReviewMutationBody = BodyType<DriverReviewInput>
+
+export const getListDriverReviewsUrl = (driverId: string,
+    page: number,) => {
+
+
+  return `/api/drivers/${driverId}/reviews/page/${page}`
+}
+
+    /**
+ * @summary Submit a captain application
+ */
+export const useCreateDriverApplication = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverApplication>>, TError,{data: BodyType<DriverApplicationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDriverApplication>>,
+        TError,
+        {data: BodyType<DriverApplicationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDriverApplicationMutationOptions(options));
+    }
+
+/**
+ * @summary Reject a captain application
+ */
+export const rejectDriverApplication = async (applicationId: string,
+    driverApplicationRejection?: DriverApplicationRejection, options?: Parameters<typeof customFetch>[1]): Promise<DriverApplicationDecision> => {
+
+  return customFetch<DriverApplicationDecision>(getRejectDriverApplicationUrl(applicationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(driverApplicationRejection)
+  }
+);}
+
+    /**
+ * @summary Reject a captain application
+ */
+export const useRejectDriverApplication = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectDriverApplication>>, TError,{applicationId: string;data?: BodyType<DriverApplicationRejection>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectDriverApplication>>,
+        TError,
+        {applicationId: string;data?: BodyType<DriverApplicationRejection>},
+        TContext
+      > => {
+      return useMutation(getRejectDriverApplicationMutationOptions(options));
+    }
+
+export type GetDriverProfileQueryError = ErrorType<StructuredError>
+
+export const getRejectDriverApplicationUrl = (applicationId: string,) => {
+
+
+  return `/api/drivers/applications/${applicationId}/reject`
+}
+
+export const getListDriverReviewsQueryKey = (driverId: string,
+    page: number,) => {
+    return [
+    `/api/drivers/${driverId}/reviews/page/${page}`
+    ] as const;
+    }
+
+    export type CreateDriverApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof createDriverApplication>>>
+
+/**
+ * @summary List captain applications for review
+ */
+
+export function useListDriverApplications<TData = Awaited<ReturnType<typeof listDriverApplications>>, TError = ErrorType<unknown>>(
+ params?: ListDriverApplicationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDriverApplications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDriverApplicationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+    export type CreateDriverApplicationMutationError = ErrorType<StructuredError>
+
+/**
+ * @summary Submit a captain application
+ */
+export const createDriverApplication = async (driverApplicationInput: DriverApplicationInput, options?: Parameters<typeof customFetch>[1]): Promise<DriverApplication> => {
+
+  return customFetch<DriverApplication>(getCreateDriverApplicationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(driverApplicationInput)
+  }
+);}
+
+export const getGetDriverProfileQueryKey = (driverId: string,) => {
+    return [
+    `/api/drivers/${driverId}`
+    ] as const;
+    }
+
+export type GetDriverProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getDriverProfile>>>
+
+/**
+ * @summary List newest reviews for a captain
+ */
+export const listDriverReviews = async (driverId: string,
+    page: number, options?: Parameters<typeof customFetch>[1]): Promise<DriverReviewPage> => {
+
+  return customFetch<DriverReviewPage>(getListDriverReviewsUrl(driverId,page),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+export type ListDriverReviewsQueryError = ErrorType<StructuredError>
+
+/**
+ * @summary Approve a captain application and create a driver
+ */
+export const approveDriverApplication = async (applicationId: string, options?: Parameters<typeof customFetch>[1]): Promise<DriverApplicationDecision> => {
+
+  return customFetch<DriverApplicationDecision>(getApproveDriverApplicationUrl(applicationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+    export type CreateDriverReviewMutationError = ErrorType<StructuredError>
+
+    export type ApproveDriverApplicationMutationError = ErrorType<StructuredError>
+
+    export type RejectDriverApplicationMutationError = ErrorType<StructuredError>
+
+export const getGetDriverProfileUrl = (driverId: string,) => {
+
+
+  return `/api/drivers/${driverId}`
+}
+
+export const getListDriverReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listDriverReviews>>, TError = ErrorType<StructuredError>>(driverId: string,
+    page: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDriverReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDriverReviewsQueryKey(driverId,page);
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDriverReviews>>> = ({ signal }) => listDriverReviews(driverId,page, { signal, ...requestOptions });
+
+
+   return  { queryKey, queryFn, enabled: driverId !== null && driverId !== undefined && page !== null && page !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDriverReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export const getCreateDriverReviewMutationOptions = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverReview>>, TError,{driverId: string;data: BodyType<DriverReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDriverReview>>, TError,{driverId: string;data: BodyType<DriverReviewInput>}, TContext> => {
+
+const mutationKey = ['createDriverReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDriverReview>>, {driverId: string;data: BodyType<DriverReviewInput>}> = (props) => {
+          const {driverId,data} = props ?? {};
+
+          return  createDriverReview(driverId,data,requestOptions)
+        }
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDriverReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createDriverReview>>>
+
+/**
+ * @summary List captain applications for review
+ */
+export const listDriverApplications = async (params?: ListDriverApplicationsParams, options?: Parameters<typeof customFetch>[1]): Promise<DriverApplication[]> => {
+
+  return customFetch<DriverApplication[]>(getListDriverApplicationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+export const getGetDriverProfileQueryOptions = <TData = Awaited<ReturnType<typeof getDriverProfile>>, TError = ErrorType<StructuredError>>(driverId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDriverProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDriverProfileQueryKey(driverId);
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDriverProfile>>> = ({ signal }) => getDriverProfile(driverId, { signal, ...requestOptions });
+
+
+   return  { queryKey, queryFn, enabled: driverId !== null && driverId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDriverProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export const getApproveDriverApplicationUrl = (applicationId: string,) => {
+
+
+  return `/api/drivers/applications/${applicationId}/approve`
+}
+
+export const getRejectDriverApplicationMutationOptions = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectDriverApplication>>, TError,{applicationId: string;data?: BodyType<DriverApplicationRejection>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectDriverApplication>>, TError,{applicationId: string;data?: BodyType<DriverApplicationRejection>}, TContext> => {
+
+const mutationKey = ['rejectDriverApplication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectDriverApplication>>, {applicationId: string;data?: BodyType<DriverApplicationRejection>}> = (props) => {
+          const {applicationId,data} = props ?? {};
+
+          return  rejectDriverApplication(applicationId,data,requestOptions)
+        }
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectDriverApplicationMutationBody = BodyType<DriverApplicationRejection> | undefined
+
+export type ListDriverReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listDriverReviews>>>
+
+export type ListDriverApplicationsQueryResult = NonNullable<Awaited<ReturnType<typeof listDriverApplications>>>
+
+export const getListDriverApplicationsQueryKey = (params?: ListDriverApplicationsParams,) => {
+    return [
+    `/api/drivers/applications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    export type ApproveDriverApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof approveDriverApplication>>>
+
+export const getCreateDriverApplicationMutationOptions = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverApplication>>, TError,{data: BodyType<DriverApplicationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDriverApplication>>, TError,{data: BodyType<DriverApplicationInput>}, TContext> => {
+
+const mutationKey = ['createDriverApplication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDriverApplication>>, {data: BodyType<DriverApplicationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDriverApplication(data,requestOptions)
+        }
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+export const getListDriverApplicationsQueryOptions = <TData = Awaited<ReturnType<typeof listDriverApplications>>, TError = ErrorType<unknown>>(params?: ListDriverApplicationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDriverApplications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDriverApplicationsQueryKey(params);
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDriverApplications>>> = ({ signal }) => listDriverApplications(params, { signal, ...requestOptions });
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDriverApplications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+    export type RejectDriverApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof rejectDriverApplication>>>
+
+    /**
+ * @summary Leave a review for a captain
+ */
+export const useCreateDriverReview = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDriverReview>>, TError,{driverId: string;data: BodyType<DriverReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDriverReview>>,
+        TError,
+        {driverId: string;data: BodyType<DriverReviewInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDriverReviewMutationOptions(options));
+    }
+
+export type ListDriverApplicationsQueryError = ErrorType<unknown>
+
+    export type CreateDriverApplicationMutationBody = BodyType<DriverApplicationInput>
+
+/**
+ * @summary Get a captain profile and rating summary
+ */
+export const getDriverProfile = async (driverId: string, options?: Parameters<typeof customFetch>[1]): Promise<DriverProfile> => {
+
+  return customFetch<DriverProfile>(getGetDriverProfileUrl(driverId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+export const getApproveDriverApplicationMutationOptions = <TError = ErrorType<StructuredError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDriverApplication>>, TError,{applicationId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveDriverApplication>>, TError,{applicationId: string}, TContext> => {
+
+const mutationKey = ['approveDriverApplication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveDriverApplication>>, {applicationId: string}> = (props) => {
+          const {applicationId} = props ?? {};
+
+          return  approveDriverApplication(applicationId,requestOptions)
+        }
+
+
+  return  { mutationFn, ...mutationOptions }}

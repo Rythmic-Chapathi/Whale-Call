@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
+import { getAuth } from "@clerk/express";
 import {
   CompleteTripParams,
   CompleteTripResponse,
@@ -147,6 +148,7 @@ router.post("/trips", async (req, res): Promise<void> => {
       boatClass: parsed.data.boatClass,
       passengerCount: parsed.data.passengerCount,
       boatId: available.id,
+      riderId: getAuth(req).userId,
       price,
       etaMinutes,
       distanceKm,
@@ -155,17 +157,21 @@ router.post("/trips", async (req, res): Promise<void> => {
     });
   });
 
-  const data = await getApiTrip(tripId);
-  res.status(201).json(CreateTripResponse.parse(data));
+  const data = await getApiTrip(trip.id);
+  if (!data) {
+    res.status(404).json({ error: "Trip not found" });
+    return;
+  }
+  res.json(GetTripResponse.parse(data));
 });
 
-router.get("/trips/:tripId", async (req, res): Promise<void> => {
-  const params = GetTripParams.safeParse(req.params);
+router.post("/trips/:tripId/complete", async (req, res): Promise<void> => {
+  const params = CompleteTripParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const data = await getApiTrip(params.data.tripId);
+  const data = await getApiTrip(trip.id);
   if (!data) {
     res.status(404).json({ error: "Trip not found" });
     return;
@@ -188,7 +194,7 @@ router.post("/trips/:tripId/complete", async (req, res): Promise<void> => {
     return;
   }
   if (trip.status === "completed") {
-    const data = await getApiTrip(trip.id);
+  const data = await getApiTrip(trip.id);
     req.log.info(
       { event: "trip_completion_replayed", tripId: trip.id },
       "completed ride returned without writing a duplicate log entry",

@@ -12,6 +12,7 @@ export const tripsTable = pgTable("trips", {
   boatClass: text("boat_class").notNull(),
   passengerCount: integer("passenger_count").notNull(),
   boatId: text("boat_id").notNull(),
+  riderId: text("rider_id"),
   price: real("price").notNull(),
   etaMinutes: integer("eta_minutes").notNull(),
   distanceKm: real("distance_km").notNull(),

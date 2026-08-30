@@ -2,6 +2,7 @@ import { and, asc, count, eq } from "drizzle-orm";
 import {
   boatsTable,
   db,
+  driverReviewsTable,
   driversTable,
   islandsTable,
   type Boat,
@@ -291,12 +292,15 @@ export async function seedFleet(): Promise<void> {
   await db.insert(boatsTable).values(boats);
 }
 
-export function toApiDriver(driver: Driver): ApiDriver {
+export function toApiDriver(driver: Driver, ratings: number[] = []): ApiDriver {
+  const rating = ratings.length
+    ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length
+    : driver.rating;
   return {
     id: driver.id,
     name: driver.name,
     avatar: driver.avatar,
-    rating: driver.rating,
+    rating: Number(rating.toFixed(2)),
     tripsCompleted: driver.tripsCompleted,
     yearsActive: driver.yearsActive,
     languages: driver.languages,
@@ -340,7 +344,15 @@ export async function listApiBoats(filters?: {
       ),
     )
     .orderBy(asc(boatsTable.id));
-  return rows.map(({ boat, driver }) => toApiBoat(boat, driver));
+  const reviews = await db.select().from(driverReviewsTable);
+  const ratings = new Map<string, number[]>();
+  for (const review of reviews) {
+    ratings.set(review.driverId, [...(ratings.get(review.driverId) ?? []), review.rating]);
+  }
+  return rows.map(({ boat, driver }) => ({
+    ...toApiBoat(boat, driver),
+    assignedDriver: toApiDriver(driver, ratings.get(driver.id)),
+  }));
 }
 
 export async function getApiBoat(boatId: string): Promise<FleetBoat | undefined> {
@@ -349,7 +361,15 @@ export async function getApiBoat(boatId: string): Promise<FleetBoat | undefined>
     .from(boatsTable)
     .innerJoin(driversTable, eq(boatsTable.driverId, driversTable.id))
     .where(eq(boatsTable.id, boatId));
-  return row ? toApiBoat(row.boat, row.driver) : undefined;
+  if (!row) return undefined;
+  const reviews = await db
+    .select()
+    .from(driverReviewsTable)
+    .where(eq(driverReviewsTable.driverId, row.driver.id));
+  return {
+    ...toApiBoat(row.boat, row.driver),
+    assignedDriver: toApiDriver(row.driver, reviews.map((review) => review.rating)),
+  };
 }
 
 export async function getApiIslandList(): Promise<ApiIsland[]> {
@@ -367,15 +387,15 @@ export async function getApiIslandList(): Promise<ApiIsland[]> {
 
 export async function getFleetSummary(): Promise<FleetSummary> {
   const boats = await db.select().from(boatsTable);
+  const visibleBoats = boats.filter((boat) => boat.status !== "offline");
   const [{ value: activeIslands }] = await db
     .select({ value: count() })
     .from(islandsTable)
     .where(eq(islandsTable.hasRescueStation, true));
   return {
-    total: boats.length,
-    available: boats.filter((boat) => boat.status === "available").length,
-    onTrip: boats.filter((boat) => boat.status === "on_trip" || boat.status === "en_route").length,
-    rescueReady: boats.filter((boat) => boat.emergencyEquipped && boat.status === "available").length,
+    total: visibleBoats.length,
+    available: visibleBoats.filter((boat) => boat.status === "available").length,
+    onTrip: visibleBoats.filter((boat) => boat.status === "on_trip" || boat.status === "en_route").length,
     activeIslands: Number(activeIslands),
   };
 }

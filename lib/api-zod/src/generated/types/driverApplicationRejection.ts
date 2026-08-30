@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface FleetSummary {
-  total: number;
-  available: number;
-  onTrip: number;
-  activeIslands: number;
+export interface DriverApplicationRejection {
+  /** @maxLength 500 */
+  reason?: string;
 }

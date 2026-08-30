@@ -10,10 +10,10 @@ import {
   Star, Waves, X, Cross, Siren
 } from 'lucide-react';
 import {
-  BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetSummaryQueryKey,
+  BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetBoatQueryKey, getGetFleetSummaryQueryKey,
   getGetTripQueryKey, getListCompletedTripsQueryKey, getListFleetQueryKey, getListIslandsQueryKey, getHealthCheckQueryKey,
   useCompleteTrip, useCreateEmergency, useCreateTrip, useGetEmergency, useGetFleetSummary,
-  useGetTrip, useHealthCheck, useListCompletedTrips, useListFleet, useListIslands, useResolveEmergency,
+  useGetFleetBoat, useGetTrip, useHealthCheck, useListCompletedTrips, useListFleet, useListIslands, useResolveEmergency,
 } from '@workspace/api-client-react';
 import type { Dock, FleetBoat, Island, Trip, TripInput } from '@workspace/api-client-react';
 import NotFound from '@/pages/not-found';
@@ -22,6 +22,7 @@ import { DestinationSearch } from '@/components/DestinationSearch';
 import { IslandDetailPage } from '@/IslandDetailPage';
 import { SupplyDispatchPage, SupplyRequestPage, SupplyTrackingPage } from '@/SupplyPages';
 import { passengerCountBand, trackEvent } from '@/lib/analytics';
+import { DriverApplyPage, DriverApplicationsPage, DriverProfilePage } from './DriverPages';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -40,7 +41,7 @@ const shellNav = [
 type UserSummary = { firstName?: string | null; fullName?: string | null; primaryEmailAddress?: { emailAddress?: string | null } | null };
 type AuthUi = { signedIn: boolean; loaded: boolean; user: UserSummary | null; signOut: () => void };
 const AuthUiContext = createContext<AuthUi>({ signedIn: false, loaded: true, user: null, signOut: () => undefined });
-const useAuthUi = () => useContext(AuthUiContext);
+export const useAuthUi = () => useContext(AuthUiContext);
 
 function rememberActiveTrip(id: string) {
   activeTripId = id;
@@ -81,7 +82,7 @@ function distanceKm(a?: { lat: number; lng: number }, b?: { lat: number; lng: nu
   return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
-function Logo({ compact = false, dark = false }: { compact?: boolean; dark?: boolean }) {
+export function Logo({ compact = false, dark = false }: { compact?: boolean; dark?: boolean }) {
   return (
     <Link href="/" className="focus-ring flex items-center gap-3" data-testid="link-logo">
       <img src={logoSrc} alt="Whale Call" className={`shrink-0 object-contain ${compact ? 'h-9 w-9' : 'h-10 w-10 rounded-[14px]'}`} />
@@ -100,26 +101,26 @@ function Button({ children, kind = 'primary', className = '', ...props }: React.
   return <button {...props} className={`focus-ring inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]} ${className}`}>{children}</button>;
 }
 
-function LoadingCard({ label = 'Checking the tide' }: { label?: string }) {
+export function LoadingCard({ label = 'Checking the tide' }: { label?: string }) {
   return <div className="grid min-h-[260px] place-items-center rounded-[28px] border border-border bg-card p-8 text-center shadow-sm" data-testid="state-loading">
     <div><div className="mx-auto mb-4 h-10 w-10 animate-pulse rounded-full bg-secondary/70" /><p className="font-mono-ui text-xs uppercase tracking-[.16em] text-muted-foreground">{label}</p></div>
   </div>;
 }
 
-function ErrorCard({ retry, message = 'The radio went quiet for a moment.' }: { retry?: () => void; message?: string }) {
+export function ErrorCard({ retry, message = 'The radio went quiet for a moment.' }: { retry?: () => void; message?: string }) {
   return <div className="rounded-[28px] border border-destructive/25 bg-destructive/5 p-8 text-center" data-testid="state-error">
     <CircleAlert className="mx-auto mb-3 text-destructive" size={28} /><h3 className="font-display text-2xl">A small squall.</h3><p className="mt-2 text-sm text-muted-foreground">{message}</p>
     {retry && <Button kind="quiet" onClick={retry} className="mt-5" data-testid="button-retry">Try again</Button>}
   </div>;
 }
 
-function ModePill({ emergency = false, supply = false }: { emergency?: boolean; supply?: boolean }) {
+export function ModePill({ emergency = false, supply = false }: { emergency?: boolean; supply?: boolean }) {
   void emergency;
   void supply;
   return null;
 }
 
-function AppShell({ children, emergency = false, supply = false }: { children: ReactNode; emergency?: boolean; supply?: boolean }) {
+export function AppShell({ children, emergency = false, supply = false }: { children: ReactNode; emergency?: boolean; supply?: boolean }) {
   const [open, setOpen] = useState(false);
   const auth = useAuthUi();
   return <div data-mode={emergency ? 'response' : supply ? 'supply' : 'voyage'} className={`min-h-[100dvh] texture bg-background ${emergency ? 'response-mode' : supply ? 'supply-mode' : 'voyage-mode'}`}>
@@ -161,7 +162,7 @@ function AppShell({ children, emergency = false, supply = false }: { children: R
   </div>;
 }
 
-function Footer() {
+export function Footer() {
   const { data: health } = useHealthCheck({ query: { queryKey: getHealthCheckQueryKey() } });
 
   return (
@@ -291,13 +292,14 @@ function FleetPage() {
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const hasFilters = Boolean(normalizedSearch || classFilter || rescueOnly);
   const filteredFleet = useMemo(() => (fleet ?? []).filter(boat => {
+    if (boat.status === 'offline') return false;
     if (!normalizedSearch) return true;
     return [boat.name, boat.id, boat.boatClass, boat.status, boat.homeIslandId, boat.assignedDriver?.name ?? '']
       .join(' ')
       .toLowerCase()
       .includes(normalizedSearch);
   }), [fleet, normalizedSearch]);
-  return <AppShell><main className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-6"><div><ModePill /><h1 className="mt-5 font-display text-5xl font-semibold tracking-[-.05em] sm:text-6xl">The live fleet.</h1><p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Fleet Directory: Captains, Boats, and Availability</p></div><div className="flex gap-6 rounded-2xl border border-border bg-card px-5 py-4"><Stat label="Total boats" value={summary?.total} /><Stat label="Ready now" value={summary?.available} /><Stat label="Rescue ready" value={summary?.rescueReady} /></div></div>
+  return <AppShell><main className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-6"><div><ModePill /><h1 className="mt-5 font-display text-5xl font-semibold tracking-[-.05em] sm:text-6xl">The live fleet.</h1><p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Fleet directory: captains, boats, and availability</p></div><div className="flex gap-6 rounded-2xl border border-border bg-card px-5 py-4"><Stat label="Total boats" value={summary?.total} /><Stat label="Available" value={summary?.available} /><Stat label="On trip" value={summary?.onTrip} /></div></div>
      <div className="mt-12 flex flex-wrap items-center gap-3 border-y border-border py-4"><label className="relative min-w-[240px] flex-1"><span className="sr-only">Search fleet</span><input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search boats or captains" className="focus-ring w-full rounded-full border border-border bg-card px-4 py-2.5 pr-10 text-sm font-semibold placeholder:text-muted-foreground" data-testid="input-fleet-search" />{searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="focus-ring absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Clear fleet search" data-testid="button-clear-fleet-search"><X size={15} /></button>}</label><select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="focus-ring rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold" data-testid="select-boat-class"><option value="">All boat classes</option><option value={BoatClass.water_taxi}>Water taxi</option><option value={BoatClass.cruiser}>Cruiser</option><option value={BoatClass.catamaran}>Catamaran</option><option value={BoatClass.speedboat}>Speedboat</option></select><button type="button" onClick={() => setRescueOnly(!rescueOnly)} aria-pressed={rescueOnly} className={`focus-ring inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold ${rescueOnly ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card'}`} data-testid="button-filter-rescue"><ShieldCheck size={16} />Rescue-equipped</button>{hasFilters && <button type="button" onClick={() => { setSearchQuery(''); setClassFilter(''); setRescueOnly(false); }} className="focus-ring rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground" data-testid="button-clear-fleet-filters">Clear filters</button>}<span className="ml-auto font-mono-ui text-[10px] uppercase tracking-[.15em] text-muted-foreground">{filteredFleet.length} vessels in view</span></div>
      {isLoading ? <div className="mt-8 grid gap-5 md:grid-cols-2"><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-8"><ErrorCard retry={refetch} /></div> : filteredFleet.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{filteredFleet.map(boat => <BoatCard key={boat.id} boat={boat} />)}</div> : <div className="mt-8"><EmptyCard title={normalizedSearch ? 'No boats match that search.' : 'No boats in that channel.'} text={normalizedSearch ? 'Try a boat name, captain, class, or clear the search.' : 'Try a wider filter and check back with the dockmaster.'} /></div>}</main><Footer /></AppShell>;
 }
@@ -305,27 +307,27 @@ function FleetPage() {
 function Stat({ label, value }: { label: string; value?: number }) { return <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">{label}</p><p className="mt-1 font-display text-2xl font-semibold">{value ?? '—'}</p></div>; }
 function BoatCard({ boat }: { boat: FleetBoat }) {
   const [expanded, setExpanded] = useState(false);
+  const { data: detail, isLoading } = useGetFleetBoat(boat.id, { query: { enabled: expanded, queryKey: getGetFleetBoatQueryKey(boat.id) } });
+  const displayStatus = boat.status === 'en_route' || boat.status === 'on_trip' ? 'On trip' : boat.status === 'available' ? 'Available' : 'Offline';
+  const statusColor = displayStatus === 'Available' ? 'bg-accent/90 text-accent-foreground border-accent' : 'bg-blue-600/90 text-white border-blue-600';
   return (
     <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}>
       <div className="relative grid h-44 place-items-center overflow-hidden bg-gradient-to-br from-sky-100 to-amber-50">
         <img src={`${basePath || ''}/boat.png`} alt={`${boat.name}, a ${boat.boatClass.replace('_', ' ')}`} className="h-[86%] w-[86%] object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-        <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] shadow-sm backdrop-blur">
-          <span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />
-          {boat.status.replace('_', ' ')}
+        <div className={`absolute right-4 top-4 flex min-h-11 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold shadow-sm backdrop-blur ${statusColor}`} data-testid="boat-status-chip">
+          <span className="h-2 w-2 rounded-full bg-white" />
+          {displayStatus}
         </div>
       </div>
       <div className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="font-display text-2xl font-semibold">{boat.name}</h3>
-            <p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p>
-          </div>
-          {boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}
+        <div>
+          <h3 className="font-display text-2xl font-semibold">{boat.name}</h3>
+          <p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p>
         </div>
         <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span>
+          <Link href={`/drivers/${boat.assignedDriver?.id}`} className="focus-ring grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90" data-testid={`link-driver-avatar-${boat.id}`}>{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</Link>
           <div>
-            <p className="text-sm font-bold">{boat.assignedDriver?.name}</p>
+            <Link href={`/drivers/${boat.assignedDriver?.id}`} className="focus-ring rounded-sm text-sm font-bold hover:underline" data-testid={`link-driver-name-${boat.id}`}>{boat.assignedDriver?.name}</Link>
             <p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p>
           </div>
         </div>
@@ -335,12 +337,12 @@ function BoatCard({ boat }: { boat: FleetBoat }) {
         {expanded && (
           <div className="mt-3 rounded-xl bg-muted p-4 text-xs text-muted-foreground" data-testid={`details-boat-${boat.id}`}>
             <p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-primary">Verified boat log</p>
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-              <div><dt className="text-[10px] uppercase tracking-wide">Rides logged</dt><dd className="mt-1 font-bold text-foreground">{boat.assignedDriver?.tripsCompleted ?? 0}</dd></div>
-              <div><dt className="text-[10px] uppercase tracking-wide">Current heading</dt><dd className="mt-1 font-bold text-foreground">{Math.round(boat.heading)}°</dd></div>
-              <div><dt className="text-[10px] uppercase tracking-wide">Languages</dt><dd className="mt-1 font-bold text-foreground">{boat.assignedDriver?.languages?.join(', ') || 'Local crew'}</dd></div>
-              <div><dt className="text-[10px] uppercase tracking-wide">Qualifications</dt><dd className="mt-1 font-bold capitalize text-foreground">{boat.assignedDriver?.certifications?.length ? boat.assignedDriver.certifications.map(item => item.replace('_', ' ')).join(', ') : 'Standard operations'}</dd></div>
-            </dl>
+            {isLoading ? <p className="mt-3">Opening the boat log…</p> : <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+              <div><dt className="text-[10px] uppercase tracking-wide">Rides logged</dt><dd className="mt-1 font-bold text-foreground">{detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0}</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Current heading</dt><dd className="mt-1 font-bold text-foreground">{Math.round(detail?.heading ?? boat.heading)}°</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Languages</dt><dd className="mt-1 font-bold text-foreground">{detail?.assignedDriver?.languages?.join(', ') || boat.assignedDriver?.languages?.join(', ') || 'Local crew'}</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Qualifications</dt><dd className="mt-1 font-bold capitalize text-foreground">{detail?.assignedDriver?.certifications?.length ? detail.assignedDriver.certifications.map(item => item.replace('_', ' ')).join(', ') : boat.assignedDriver?.certifications?.length ? boat.assignedDriver.certifications.map(item => item.replace('_', ' ')).join(', ') : 'Standard operations'}</dd></div>
+            </dl>}
           </div>
         )}
       </div>
@@ -433,13 +435,13 @@ function TripPage() {
   const pickupName = islands?.find(island => island.id === trip.pickupIslandId)?.name ?? trip.pickupIslandId;
   const destinationName = islands?.find(island => island.id === trip.destinationIslandId)?.name ?? trip.destinationIslandId;
   return <AppShell><main className="mx-auto max-w-[1000px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-start justify-between gap-6"><div><ModePill /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Crossing {trip.id.slice(0, 8)}</p><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{done ? 'Safe on shore.' : 'Your boat is on the way.'}</h1><p className="mt-4 text-sm text-muted-foreground">{done ? 'Thanks for travelling with us.' : `${liveEta} minutes until we reach you.`}</p></div><div className={`rounded-2xl px-4 py-3 font-mono-ui text-[10px] uppercase tracking-[.16em] ${done ? 'bg-accent/15 text-primary' : 'bg-secondary/25 text-primary'}`} data-testid="status-trip">{trip.status.replace('_', ' ')}</div></div>
-      <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[500px] overflow-hidden rounded-[30px] border border-border sm:min-h-[620px]"><div className="absolute left-[18%] top-[17%] h-32 w-44 rotate-6 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[12%] h-28 w-40 -rotate-12 rounded-[42%] bg-[#d5ae6d] island-shape" /><div className="absolute left-[28%] top-[35%] h-3 w-3 rounded-full bg-primary ring-8 ring-primary/15" /><div className="absolute bottom-[29%] right-[30%] h-3 w-3 rounded-full bg-destructive ring-8 ring-destructive/15" /><div className="absolute left-[29%] top-[34%] h-24 w-36 rotate-12"><img src={`${basePath || ''}/boat.png`} alt={`${trip.boat?.name ?? 'Boat'} on the water`} className="h-full w-full object-contain drop-shadow-xl" /></div><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-card/90 p-4 backdrop-blur"><div className="flex items-center justify-between"><p className="text-sm font-bold">{trip.boat?.name ?? 'Your boat'}</p><p className="font-mono-ui text-xs text-primary">{trip.distanceKm} km crossing</p></div><p className="mt-1 text-xs text-muted-foreground">Captain {trip.boat?.assignedDriver?.name ?? 'on duty'} · {trip.boat?.assignedDriver?.rating?.toFixed(1)} rating</p></div></div>
+      <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[500px] overflow-hidden rounded-[30px] border border-border sm:min-h-[620px]"><div className="absolute left-[18%] top-[17%] h-32 w-44 rotate-6 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[12%] h-28 w-40 -rotate-12 rounded-[42%] bg-[#d5ae6d] island-shape" /><div className="absolute left-[28%] top-[35%] h-3 w-3 rounded-full bg-primary ring-8 ring-primary/15" /><div className="absolute bottom-[29%] right-[30%] h-3 w-3 rounded-full bg-destructive ring-8 ring-destructive/15" /><div className="absolute left-[29%] top-[34%] h-24 w-36 rotate-12"><img src={`${basePath || ''}/boat.png`} alt={`${trip.boat?.name ?? 'Boat'} on the water`} className="h-full w-full object-contain drop-shadow-xl" /></div><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-card/90 p-4 backdrop-blur"><div className="flex items-center justify-between"><p className="text-sm font-bold">{trip.boat?.name ?? 'Your boat'}</p><p className="font-mono-ui text-xs text-primary">{trip.distanceKm} km crossing</p></div><p className="mt-1 text-xs text-muted-foreground">Captain <Link href={`/drivers/${trip.boat?.assignedDriver?.id}`} className="font-bold hover:underline" data-testid={`link-driver-name-${trip.boat?.assignedDriver?.id}`}>{trip.boat?.assignedDriver?.name ?? 'on duty'}</Link> · {trip.boat?.assignedDriver?.rating?.toFixed(1)} rating</p></div></div>
        <div className="rounded-[30px] border border-border bg-card p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Passage details</p><div className="mt-6 grid gap-5"><SummaryLine label="From" value={pickupName} /><SummaryLine label="To" value={destinationName} /><SummaryLine label="Passengers" value={String(trip.passengerCount)} /><SummaryLine label="Fare" value={`$${trip.price.toFixed(2)}`} /></div>{!done && <Button className="mt-6 w-full" onClick={() => completeTrip.mutate({ tripId: trip.id }, { onSuccess: () => { trackEvent('crossing_completed', { boat_class: trip.boat.boatClass, passenger_count_band: passengerCountBand(trip.passengerCount) }); queryClient.invalidateQueries({ queryKey: getGetTripQueryKey(trip.id) }); } })} disabled={completeTrip.isPending} data-testid="button-complete-trip">{completeTrip.isPending ? 'Closing the log…' : 'Mark crossing complete'} <Check size={16} /></Button>}{done && <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 p-4 text-sm font-bold text-primary" data-testid="status-trip-complete"><CircleCheck size={19} /> Passage logged</div>}</div></div>{done && <TripReceipt trip={trip} pickupName={pickupName} destinationName={destinationName} />}</main></AppShell>;
 }
 
 function TripReceipt({ trip, pickupName, destinationName }: { trip: Trip; pickupName: string; destinationName: string }) {
   const serviceFee = Number((trip.price * 0.08).toFixed(2));
-  return <section className="receipt mt-8 overflow-hidden rounded-[30px] border border-border bg-[#fffdf8] shadow-lg" data-testid="trip-receipt"><div className="flex flex-wrap items-start justify-between gap-4 border-b border-dashed border-border bg-secondary/15 p-7"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Whale Call receipt</p><h2 className="mt-2 font-display text-3xl font-semibold">Thanks for riding.</h2></div><div className="text-right font-mono-ui text-[10px] uppercase leading-5 text-muted-foreground"><p>{trip.id.toUpperCase()}</p><p>{new Date(trip.targetArrivalAt).toLocaleString()}</p></div></div><div className="grid gap-7 p-7 md:grid-cols-2"><div><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Route</p><p className="mt-2 text-lg font-extrabold">{pickupName} → {destinationName}</p><p className="mt-1 text-sm text-muted-foreground">{trip.distanceKm} km · {trip.passengerCount} passenger{trip.passengerCount === 1 ? '' : 's'}</p><p className="mt-5 text-xs font-bold uppercase tracking-wide text-muted-foreground">Captain & boat</p><p className="mt-2 text-sm font-extrabold">{trip.boat.assignedDriver.name} · {trip.boat.name}</p><p className="mt-1 text-xs text-muted-foreground">★ {trip.boat.assignedDriver.rating.toFixed(1)} · {trip.boat.boatClass.replace('_', ' ')}</p></div><div className="rounded-2xl bg-white p-5 shadow-sm"><p className="flex justify-between text-sm"><span>Crossing</span><strong>${(trip.price - serviceFee).toFixed(2)}</strong></p><p className="mt-3 flex justify-between text-sm"><span>Service & coastwatch</span><strong>${serviceFee.toFixed(2)}</strong></p><p className="mt-5 flex justify-between border-t border-dashed pt-5 text-lg"><strong>Total</strong><strong>${trip.price.toFixed(2)}</strong></p><p className="mt-2 text-right text-[10px] text-muted-foreground">Payment recorded · demo checkout</p></div></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-border px-7 py-5"><p className="flex items-center gap-2 text-xs font-bold text-primary"><ShieldCheck size={15} /> Crossing closed · captain returned to service</p><button onClick={() => { trackEvent('receipt_printed', { boat_class: trip.boat.boatClass, passenger_count_band: passengerCountBand(trip.passengerCount) }); window.print(); }} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-sm font-bold"><BookOpen size={16} /> Print receipt</button></div></section>;
+  return <section className="receipt mt-8 overflow-hidden rounded-[30px] border border-border bg-[#fffdf8] shadow-lg" data-testid="trip-receipt"><div className="flex flex-wrap items-start justify-between gap-4 border-b border-dashed border-border bg-secondary/15 p-7"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Whale Call receipt</p><h2 className="mt-2 font-display text-3xl font-semibold">Thanks for riding.</h2></div><div className="text-right font-mono-ui text-[10px] uppercase leading-5 text-muted-foreground"><p>{trip.id.toUpperCase()}</p><p>{new Date(trip.targetArrivalAt).toLocaleString()}</p></div></div><div className="grid gap-7 p-7 md:grid-cols-2"><div><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Route</p><p className="mt-2 text-lg font-extrabold">{pickupName} → {destinationName}</p><p className="mt-1 text-sm text-muted-foreground">{trip.distanceKm} km · {trip.passengerCount} passenger{trip.passengerCount === 1 ? '' : 's'}</p><p className="mt-5 text-xs font-bold uppercase tracking-wide text-muted-foreground">Captain & boat</p><p className="mt-2 text-sm font-extrabold"><Link href={`/drivers/${trip.boat.assignedDriver.id}`} className="hover:underline" data-testid="link-receipt-driver">{trip.boat.assignedDriver.name}</Link> · {trip.boat.name}</p><p className="mt-1 text-xs text-muted-foreground">★ {trip.boat.assignedDriver.rating.toFixed(1)} · {trip.boat.boatClass.replace('_', ' ')}</p></div><div className="rounded-2xl bg-white p-5 shadow-sm"><p className="flex justify-between text-sm"><span>Crossing</span><strong>${(trip.price - serviceFee).toFixed(2)}</strong></p><p className="mt-3 flex justify-between text-sm"><span>Service & coastwatch</span><strong>${serviceFee.toFixed(2)}</strong></p><p className="mt-5 flex justify-between border-t border-dashed pt-5 text-lg"><strong>Total</strong><strong>${trip.price.toFixed(2)}</strong></p><p className="mt-2 text-right text-[10px] text-muted-foreground">Payment recorded · demo checkout</p></div></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-border px-7 py-5"><p className="flex items-center gap-2 text-xs font-bold text-primary"><ShieldCheck size={15} /> Crossing closed · captain returned to service</p><button onClick={() => { trackEvent('receipt_printed', { boat_class: trip.boat.boatClass, passenger_count_band: passengerCountBand(trip.passengerCount) }); window.print(); }} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-sm font-bold"><BookOpen size={16} /> Print receipt</button></div></section>;
 }
 
 function EmergencyPage() {
@@ -568,7 +570,7 @@ function Router() {
     setIsNavigating(true);
     window.setTimeout(() => { setLocation(stripBase(url.pathname) + url.search + url.hash); window.setTimeout(() => setIsNavigating(false), 240); }, 520);
   }}>
-    <Switch><Route path="/" component={HomeRoute} /><Route path="/islands/:id" component={IslandDetailPage} /><Route path="/book" component={BookingPage} /><Route path="/supplies" component={() => <AppShell supply><SupplyRequestPage /></AppShell>} /><Route path="/run/:id" component={() => <AppShell supply><SupplyTrackingPage /></AppShell>} /><Route path="/dispatch" component={() => <AppShell supply><SupplyDispatchPage /></AppShell>} /><Route path="/fleet" component={FleetPage} /><Route path="/trip" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>
+    <Switch><Route path="/" component={HomeRoute} /><Route path="/islands/:id" component={IslandDetailPage} /><Route path="/book" component={BookingPage} /><Route path="/supplies" component={() => <AppShell supply><SupplyRequestPage /></AppShell>} /><Route path="/run/:id" component={() => <AppShell supply><SupplyTrackingPage /></AppShell>} /><Route path="/dispatch" component={() => <AppShell supply><SupplyDispatchPage /></AppShell>} /><Route path="/fleet" component={FleetPage} /><Route path="/trip" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/drivers/apply" component={DriverApplyPage} /><Route path="/drivers/applications" component={DriverApplicationsPage} /><Route path="/drivers/:id" component={DriverProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>
     {isNavigating && <div className="fixed inset-0 z-[100] grid place-items-center bg-sidebar/90 text-sidebar-foreground backdrop-blur-sm" role="status" aria-live="polite"><div className="text-center"><img src={logoSrc} alt="" className="mx-auto h-20 w-20 animate-spin rounded-full border-4 border-secondary shadow-2xl [animation-duration:1.4s]" /><p className="mt-5 font-mono-ui text-[10px] uppercase tracking-[.22em] text-secondary">Charting the next passage</p></div><div className="absolute left-0 top-0 h-1.5 w-full overflow-hidden bg-white/10"><span className="loading-current block h-full bg-secondary" /></div></div>}
   </div>;
 }

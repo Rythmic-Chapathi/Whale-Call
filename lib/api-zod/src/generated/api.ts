@@ -27,7 +27,6 @@ export const searchLocationsQueryLimitDefault = 5;
 export const searchLocationsQueryLimitMax = 5;
 
 
-
 export const SearchLocationsQueryParams = zod.object({
   "q": zod.coerce.string().min(searchLocationsQueryQMin).max(searchLocationsQueryQMax),
   "limit": zod.coerce.number().int().min(1).max(searchLocationsQueryLimitMax).default(searchLocationsQueryLimitDefault)
@@ -118,7 +117,6 @@ export const GetFleetSummaryResponse = zod.object({
   "total": zod.int(),
   "available": zod.int(),
   "onTrip": zod.int(),
-  "rescueReady": zod.int(),
   "activeIslands": zod.int()
 })
 
@@ -156,6 +154,11 @@ export const GetFleetBoatResponse = zod.object({
   "payloadKg": zod.number(),
   "refrigerated": zod.boolean()
 })
+
+/**
+ * @summary Submit a captain application
+ */
+export const createDriverApplicationBodyFullNameMin = 2;
 
 
 /**
@@ -209,7 +212,6 @@ export const ListCompletedTripsResponse = zod.array(ListCompletedTripsResponseIt
  * @summary Request a standard boat ride
  */
 export const createTripBodyPassengerCountMax = 16;
-
 
 
 export const CreateTripBody = zod.object({
@@ -523,7 +525,6 @@ export const ResolveEmergencyResponse = zod.object({
 export const listSupplyCatalogResponseOneCriticalityMax = 3;
 
 
-
 export const ListSupplyCatalogResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -562,7 +563,6 @@ export const ListSupplyDepotsResponse = zod.array(ListSupplyDepotsResponseItem)
  */
 
 
-
 export const GetSupplyAvailabilityQueryParams = zod.object({
   "itemId": zod.coerce.string(),
   "quantity": zod.coerce.number().int().min(1),
@@ -585,8 +585,6 @@ export const GetSupplyAvailabilityResponse = zod.array(GetSupplyAvailabilityResp
  */
 
 
-
-
 export const CreateSupplyOrderBody = zod.object({
   "lines": zod.array(zod.object({
   "itemId": zod.string(),
@@ -603,9 +601,6 @@ export const CreateSupplyOrderBody = zod.object({
   "requesterNote": zod.string(),
   "linkedEmergencyId": zod.string().nullish()
 })
-
-
-
 
 
 export const CreateSupplyOrderResponse = zod.object({
@@ -681,9 +676,6 @@ export const GetSupplyOrderParams = zod.object({
 })
 
 
-
-
-
 export const GetSupplyOrderResponse = zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date(),
@@ -755,9 +747,6 @@ export const GetSupplyOrderResponse = zod.object({
 export const CancelSupplyOrderParams = zod.object({
   "supplyOrderId": zod.coerce.string()
 })
-
-
-
 
 
 export const CancelSupplyOrderResponse = zod.object({
@@ -833,9 +822,6 @@ export const AgeSupplyOrderParams = zod.object({
 })
 
 
-
-
-
 export const AgeSupplyOrderResponse = zod.object({
   "id": zod.string(),
   "createdAt": zod.coerce.date(),
@@ -904,8 +890,6 @@ export const AgeSupplyOrderResponse = zod.object({
 /**
  * @summary List active supply runs sorted by live priority
  */
-
-
 
 
 export const GetSupplyQueueResponseItem = zod.object({
@@ -982,18 +966,12 @@ export const AttachEmergencySuppliesParams = zod.object({
 })
 
 
-
-
-
 export const AttachEmergencySuppliesBody = zod.object({
   "lines": zod.array(zod.object({
   "itemId": zod.string(),
   "quantity": zod.int().min(1)
 })).min(1)
 })
-
-
-
 
 
 export const AttachEmergencySuppliesResponse = zod.object({
@@ -1069,3 +1047,371 @@ export const ResetDemoResponse = zod.object({
 })
 
 
+export const rejectDriverApplicationResponseApplicationOneFullNameMax = 120;
+
+export const listDriverApplicationsResponseOneFullNameMax = 120;
+
+export const CreateDriverApplicationBody = zod.object({
+  "fullName": zod.string().min(createDriverApplicationBodyFullNameMin).max(createDriverApplicationBodyFullNameMax),
+  "email": zod.email(),
+  "phone": zod.string().min(createDriverApplicationBodyPhoneMin).max(createDriverApplicationBodyPhoneMax),
+  "homeIslandId": zod.string(),
+  "yearsExperience": zod.int().min(createDriverApplicationBodyYearsExperienceMin).max(createDriverApplicationBodyYearsExperienceMax),
+  "boatClasses": zod.array(zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat'])).min(1),
+  "languages": zod.array(zod.string()).min(1),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops'])).min(1),
+  "availability": zod.string().min(createDriverApplicationBodyAvailabilityMin).max(createDriverApplicationBodyAvailabilityMax),
+  "experience": zod.string().min(createDriverApplicationBodyExperienceMin).max(createDriverApplicationBodyExperienceMax),
+  "safetyRecord": zod.string().min(createDriverApplicationBodySafetyRecordMin).max(createDriverApplicationBodySafetyRecordMax),
+  "motivation": zod.string().min(createDriverApplicationBodyMotivationMin).max(createDriverApplicationBodyMotivationMax),
+  "consent": zod.literal(true)
+})
+
+export const rejectDriverApplicationResponseApplicationOneAvailabilityMax = 160;
+
+export const approveDriverApplicationResponseApplicationOneExperienceMin = 80;
+
+export const createDriverApplicationResponseOneFullNameMax = 120;
+
+export const createDriverApplicationBodyAvailabilityMax = 160;
+
+export const createDriverApplicationResponseOneMotivationMax = 2000;
+
+export const listDriverApplicationsResponseOneYearsExperienceMax = 60;
+
+export const CreateDriverReviewResponse = zod.object({
+  "id": zod.string(),
+  "driverId": zod.string(),
+  "reviewerName": zod.string(),
+  "rating": zod.int(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+export const approveDriverApplicationResponseApplicationOneExperienceMax = 2000;
+
+export const ApproveDriverApplicationResponse = zod.object({
+  "application": zod.object({
+  "fullName": zod.string().min(approveDriverApplicationResponseApplicationOneFullNameMin).max(approveDriverApplicationResponseApplicationOneFullNameMax),
+  "email": zod.email(),
+  "phone": zod.string().min(approveDriverApplicationResponseApplicationOnePhoneMin).max(approveDriverApplicationResponseApplicationOnePhoneMax),
+  "homeIslandId": zod.string(),
+  "yearsExperience": zod.int().min(approveDriverApplicationResponseApplicationOneYearsExperienceMin).max(approveDriverApplicationResponseApplicationOneYearsExperienceMax),
+  "boatClasses": zod.array(zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat'])).min(1),
+  "languages": zod.array(zod.string()).min(1),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops'])).min(1),
+  "availability": zod.string().min(approveDriverApplicationResponseApplicationOneAvailabilityMin).max(approveDriverApplicationResponseApplicationOneAvailabilityMax),
+  "experience": zod.string().min(approveDriverApplicationResponseApplicationOneExperienceMin).max(approveDriverApplicationResponseApplicationOneExperienceMax),
+  "safetyRecord": zod.string().min(approveDriverApplicationResponseApplicationOneSafetyRecordMin).max(approveDriverApplicationResponseApplicationOneSafetyRecordMax),
+  "motivation": zod.string().min(approveDriverApplicationResponseApplicationOneMotivationMin).max(approveDriverApplicationResponseApplicationOneMotivationMax),
+  "consent": zod.literal(true)
+}).and(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "rejectionReason": zod.string().nullable(),
+  "driverId": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "driver": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),zod.null()])
+})
+
+export const createDriverApplicationBodyMotivationMin = 80;
+
+export const listDriverApplicationsResponseOneAvailabilityMax = 160;
+
+export const rejectDriverApplicationBodyReasonMax = 500;
+
+export const RejectDriverApplicationBody = zod.object({
+  "reason": zod.string().max(rejectDriverApplicationBodyReasonMax).optional()
+})
+
+export const rejectDriverApplicationResponseApplicationOnePhoneMin = 7;
+
+export const rejectDriverApplicationResponseApplicationOneExperienceMin = 80;
+
+export const ListDriverReviewsParams = zod.object({
+  "driverId": zod.coerce.string(),
+  "page": zod.coerce.number().int().min(1)
+})
+
+export const CreateDriverReviewBody = zod.object({
+  "rating": zod.int().min(1).max(createDriverReviewBodyRatingMax),
+  "body": zod.string().min(createDriverReviewBodyBodyMin).max(createDriverReviewBodyBodyMax)
+})
+
+export const listDriverApplicationsResponseOneMotivationMin = 80;
+
+export const createDriverReviewBodyBodyMin = 10;
+
+export const approveDriverApplicationResponseApplicationOneSafetyRecordMax = 2000;
+
+/**
+ * @summary Approve a captain application and create a driver
+ */
+export const ApproveDriverApplicationParams = zod.object({
+  "applicationId": zod.coerce.string()
+})
+
+export const createDriverApplicationResponseOneExperienceMin = 80;
+
+export const approveDriverApplicationResponseApplicationOneFullNameMax = 120;
+
+export const createDriverApplicationBodyExperienceMin = 80;
+
+export const listDriverApplicationsResponseOneAvailabilityMin = 2;
+
+export const createDriverApplicationResponseOneFullNameMin = 2;
+
+export const approveDriverApplicationResponseApplicationOneYearsExperienceMax = 60;
+
+export const listDriverApplicationsResponseOnePhoneMin = 7;
+
+export const listDriverApplicationsResponseOneExperienceMax = 2000;
+
+export const createDriverApplicationResponseOnePhoneMin = 7;
+
+export const listDriverApplicationsResponseOneMotivationMax = 2000;
+
+/**
+ * @summary Reject a captain application
+ */
+export const RejectDriverApplicationParams = zod.object({
+  "applicationId": zod.coerce.string()
+})
+
+export const createDriverApplicationBodyAvailabilityMin = 2;
+
+export const createDriverApplicationResponseOneYearsExperienceMin = 0;
+
+export const createDriverApplicationBodyPhoneMin = 7;
+
+export const createDriverApplicationResponseOneMotivationMin = 80;
+
+export const approveDriverApplicationResponseApplicationOneSafetyRecordMin = 80;
+
+export const rejectDriverApplicationResponseApplicationOnePhoneMax = 30;
+
+export const rejectDriverApplicationResponseApplicationOneYearsExperienceMin = 0;
+
+export const createDriverApplicationBodySafetyRecordMax = 2000;
+
+export const rejectDriverApplicationResponseApplicationOneYearsExperienceMax = 60;
+
+export const rejectDriverApplicationResponseApplicationOneMotivationMin = 80;
+
+export const createDriverReviewBodyRatingMax = 5;
+
+export const createDriverReviewBodyBodyMax = 1000;
+
+export const rejectDriverApplicationResponseApplicationOneSafetyRecordMax = 2000;
+
+export const rejectDriverApplicationResponseApplicationOneSafetyRecordMin = 80;
+
+export const createDriverApplicationResponseOneExperienceMax = 2000;
+
+export const createDriverApplicationResponseOneSafetyRecordMax = 2000;
+
+export const approveDriverApplicationResponseApplicationOneMotivationMax = 2000;
+
+export const rejectDriverApplicationResponseApplicationOneExperienceMax = 2000;
+
+export const approveDriverApplicationResponseApplicationOneAvailabilityMin = 2;
+
+/**
+ * @summary Leave a review for a captain
+ */
+export const CreateDriverReviewParams = zod.object({
+  "driverId": zod.coerce.string()
+})
+
+export const listDriverApplicationsResponseOneExperienceMin = 80;
+
+export const createDriverApplicationBodyYearsExperienceMin = 0;
+
+export const listDriverApplicationsResponseOnePhoneMax = 30;
+
+export const RejectDriverApplicationResponse = zod.object({
+  "application": zod.object({
+  "fullName": zod.string().min(rejectDriverApplicationResponseApplicationOneFullNameMin).max(rejectDriverApplicationResponseApplicationOneFullNameMax),
+  "email": zod.email(),
+  "phone": zod.string().min(rejectDriverApplicationResponseApplicationOnePhoneMin).max(rejectDriverApplicationResponseApplicationOnePhoneMax),
+  "homeIslandId": zod.string(),
+  "yearsExperience": zod.int().min(rejectDriverApplicationResponseApplicationOneYearsExperienceMin).max(rejectDriverApplicationResponseApplicationOneYearsExperienceMax),
+  "boatClasses": zod.array(zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat'])).min(1),
+  "languages": zod.array(zod.string()).min(1),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops'])).min(1),
+  "availability": zod.string().min(rejectDriverApplicationResponseApplicationOneAvailabilityMin).max(rejectDriverApplicationResponseApplicationOneAvailabilityMax),
+  "experience": zod.string().min(rejectDriverApplicationResponseApplicationOneExperienceMin).max(rejectDriverApplicationResponseApplicationOneExperienceMax),
+  "safetyRecord": zod.string().min(rejectDriverApplicationResponseApplicationOneSafetyRecordMin).max(rejectDriverApplicationResponseApplicationOneSafetyRecordMax),
+  "motivation": zod.string().min(rejectDriverApplicationResponseApplicationOneMotivationMin).max(rejectDriverApplicationResponseApplicationOneMotivationMax),
+  "consent": zod.literal(true)
+}).and(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "rejectionReason": zod.string().nullable(),
+  "driverId": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable()
+})),
+  "driver": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),zod.null()])
+})
+
+export const createDriverApplicationResponseOneSafetyRecordMin = 80;
+
+export const createDriverApplicationBodySafetyRecordMin = 80;
+
+export const CreateDriverApplicationResponse = zod.object({
+  "fullName": zod.string().min(createDriverApplicationResponseOneFullNameMin).max(createDriverApplicationResponseOneFullNameMax),
+  "email": zod.email(),
+  "phone": zod.string().min(createDriverApplicationResponseOnePhoneMin).max(createDriverApplicationResponseOnePhoneMax),
+  "homeIslandId": zod.string(),
+  "yearsExperience": zod.int().min(createDriverApplicationResponseOneYearsExperienceMin).max(createDriverApplicationResponseOneYearsExperienceMax),
+  "boatClasses": zod.array(zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat'])).min(1),
+  "languages": zod.array(zod.string()).min(1),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops'])).min(1),
+  "availability": zod.string().min(createDriverApplicationResponseOneAvailabilityMin).max(createDriverApplicationResponseOneAvailabilityMax),
+  "experience": zod.string().min(createDriverApplicationResponseOneExperienceMin).max(createDriverApplicationResponseOneExperienceMax),
+  "safetyRecord": zod.string().min(createDriverApplicationResponseOneSafetyRecordMin).max(createDriverApplicationResponseOneSafetyRecordMax),
+  "motivation": zod.string().min(createDriverApplicationResponseOneMotivationMin).max(createDriverApplicationResponseOneMotivationMax),
+  "consent": zod.literal(true)
+}).and(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "rejectionReason": zod.string().nullable(),
+  "driverId": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable()
+}))
+
+/**
+ * @summary Get a captain profile and rating summary
+ */
+export const GetDriverProfileParams = zod.object({
+  "driverId": zod.coerce.string()
+})
+
+export const listDriverApplicationsResponseOneSafetyRecordMax = 2000;
+
+export const approveDriverApplicationResponseApplicationOneMotivationMin = 80;
+
+export const ListDriverApplicationsResponseItem = zod.object({
+  "fullName": zod.string().min(listDriverApplicationsResponseOneFullNameMin).max(listDriverApplicationsResponseOneFullNameMax),
+  "email": zod.email(),
+  "phone": zod.string().min(listDriverApplicationsResponseOnePhoneMin).max(listDriverApplicationsResponseOnePhoneMax),
+  "homeIslandId": zod.string(),
+  "yearsExperience": zod.int().min(listDriverApplicationsResponseOneYearsExperienceMin).max(listDriverApplicationsResponseOneYearsExperienceMax),
+  "boatClasses": zod.array(zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat'])).min(1),
+  "languages": zod.array(zod.string()).min(1),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops'])).min(1),
+  "availability": zod.string().min(listDriverApplicationsResponseOneAvailabilityMin).max(listDriverApplicationsResponseOneAvailabilityMax),
+  "experience": zod.string().min(listDriverApplicationsResponseOneExperienceMin).max(listDriverApplicationsResponseOneExperienceMax),
+  "safetyRecord": zod.string().min(listDriverApplicationsResponseOneSafetyRecordMin).max(listDriverApplicationsResponseOneSafetyRecordMax),
+  "motivation": zod.string().min(listDriverApplicationsResponseOneMotivationMin).max(listDriverApplicationsResponseOneMotivationMax),
+  "consent": zod.literal(true)
+}).and(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "rejectionReason": zod.string().nullable(),
+  "driverId": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullable()
+}))
+
+export const createDriverApplicationResponseOneAvailabilityMax = 160;
+
+export const rejectDriverApplicationResponseApplicationOneFullNameMin = 2;
+
+export const createDriverApplicationBodyYearsExperienceMax = 60;
+
+export const listDriverApplicationsResponseOneSafetyRecordMin = 80;
+
+export const GetDriverProfileResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}).and(zod.object({
+  "reviewCount": zod.int(),
+  "distribution": zod.record(zod.string(), zod.int()),
+  "canReview": zod.boolean(),
+  "reviewBlockReason": zod.string().nullable()
+}))
+
+export const approveDriverApplicationResponseApplicationOnePhoneMin = 7;
+
+export const ListDriverReviewsResponse = zod.object({
+  "reviews": zod.array(zod.object({
+  "id": zod.string(),
+  "driverId": zod.string(),
+  "reviewerName": zod.string(),
+  "rating": zod.int(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "total": zod.int(),
+  "hasNext": zod.boolean()
+})
+
+export const listDriverApplicationsResponseOneFullNameMin = 2;
+
+export const listDriverApplicationsResponseOneYearsExperienceMin = 0;
+
+export const rejectDriverApplicationResponseApplicationOneMotivationMax = 2000;
+
+export const createDriverApplicationResponseOnePhoneMax = 30;
+
+export const ListDriverApplicationsResponse = zod.array(ListDriverApplicationsResponseItem)
+
+export const approveDriverApplicationResponseApplicationOneFullNameMin = 2;
+
+export const createDriverApplicationResponseOneYearsExperienceMax = 60;
+
+export const createDriverApplicationResponseOneAvailabilityMin = 2;
+
+export const approveDriverApplicationResponseApplicationOneYearsExperienceMin = 0;
+
+export const createDriverApplicationBodyPhoneMax = 30;
+
+export const createDriverApplicationBodyMotivationMax = 2000;
+
+export const createDriverApplicationBodyExperienceMax = 2000;
+
+export const rejectDriverApplicationResponseApplicationOneAvailabilityMin = 2;
+
+export const approveDriverApplicationResponseApplicationOneAvailabilityMax = 160;
+
+export const createDriverApplicationBodyFullNameMax = 120;
+
+/**
+ * @summary List captain applications for review
+ */
+export const ListDriverApplicationsQueryParams = zod.object({
+  "status": zod.enum(['pending', 'approved', 'rejected']).optional()
+})
+
+export const approveDriverApplicationResponseApplicationOnePhoneMax = 30;
