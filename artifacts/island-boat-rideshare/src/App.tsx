@@ -26,10 +26,10 @@ const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const logoSrc = `${basePath || ''}/whale-call-logo.png`;
 const shellNav = [
-  { href: '/book', label: 'Book a crossing', icon: Navigation },
-  { href: '/supplies', label: 'Send supplies', icon: Sailboat },
-  { href: '/fleet', label: 'The live fleet', icon: Sailboat },
-  { href: '/profile', label: 'Your logbook', icon: BookOpen },
+  { href: '/book', label: 'Choose a Destination', icon: Navigation },
+  { href: '/supplies', label: 'Need Supplies?', icon: Sailboat },
+  { href: '/fleet', label: 'The Live Fleet', icon: Sailboat },
+  { href: '/profile', label: 'Your Trips', icon: BookOpen },
 ];
 type UserSummary = { firstName?: string | null; fullName?: string | null; primaryEmailAddress?: { emailAddress?: string | null } | null };
 type AuthUi = { signedIn: boolean; loaded: boolean; user: UserSummary | null; signOut: () => void };
@@ -176,7 +176,7 @@ function Landing() {
         </div></div>
       </div>
     </section>
-     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Where we launch</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Seven Caribbean islands. One operating network.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
+     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Where we launch</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Our fleet operates across 7 Carribean islands.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
       {isLoading ? <div className="mt-10 grid gap-4 sm:grid-cols-3"><LoadingCard /><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-10"><ErrorCard retry={refetch} /></div> : <div className="mt-10 grid gap-4 sm:grid-cols-3">{(islands ?? []).map((island, i) => <IslandCard key={island.id} island={island} index={i} />)}</div>}</div></section>
     <section className="px-5 py-20 lg:px-8"><div className="mx-auto grid max-w-[1240px] items-center gap-12 rounded-[34px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:grid-cols-[1fr_auto] lg:py-14"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-secondary">When the ordinary is not enough</p><h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-tight tracking-[-.04em]">Response mode is always one tap away.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/70">For a medical need, a stranded boat, or water coming in. Our rescue-equipped boats and trained captains know what to do next.</p></div><Link href="/emergency" className="focus-ring inline-flex items-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-sm font-extrabold text-white hover:-translate-y-1" data-testid="link-home-emergency">Open Response mode <LifeBuoy size={18} /></Link></div></section>
     <Footer />
