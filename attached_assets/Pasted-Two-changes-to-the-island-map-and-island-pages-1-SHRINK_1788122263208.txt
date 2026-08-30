@@ -1,0 +1,54 @@
+Two changes to the island map and island pages.
+
+═══ 1. SHRINK THE MAP LABELS ═══
+The island name labels on the chart (landing hero + /book) are oversized and overlap each
+other. Now that boats aren't drawn on it, the labels can be much smaller:
+  - font-size 9px desktop, 8px mobile (currently ~12-14px), Inter 500, sentence case
+    ("Coral Cove", not "CORAL COVE"), no letter-spacing
+  - color #6B6B6B, or #000 for the selected pickup/destination island
+  - remove the pill/badge background behind each label — plain text on the water
+  - position each label just below its island shape, centered, and nudge per-island so no
+    two labels touch (Lighthouse Isle and Driftwood currently collide)
+  - keep the "Leaving"/"Arriving" tags but shrink to match
+  - shrink island shapes ~15% so there's breathing room between them
+Labels must stay legible — check at the smallest rendered map size before finishing.
+
+═══ 2. ISLAND PAGES = TOURIST INFO PAGES ═══
+Clicking any island (card on the landing page, or shape/label on the map) → /islands/:id
+IDs: coral-cove, driftwood-island, lighthouse-isle, mango-harbor, pelican-key, starfish-bay,
+turtle-point
+
+Write it like a real destination guide, not app UI. Sections:
+  - Island name + tagline
+  - 2-3 sentence intro: what the island is like, who goes there, what it's known for
+  - Hero: 3 small photos in a row (16:9, 12px radius, object-fit cover)
+  - "Things to do" — 4-5 cards, each: small image (4:3), name, one-sentence description.
+    Grid 4 across desktop / 2 tablet / 1 mobile.
+  - "Good to know" — small facts list: best time to visit, how busy it gets, what to bring,
+    accessibility at the docks
+  - "Where to land" — the island's 2 docks, each with which part of the island it's nearest
+    and a "Book a ride here" button (presets island AND dock)
+  - "Getting here" — travel time + distance from the 3 nearest islands, computed from the
+    existing distance/cruise-speed logic, not hardcoded
+  - Sticky CTA on mobile: "Book a ride to [Island]"
+  - "Nearby islands" — 3 linked cards
+
+Content: match each island's existing tagline (Coral Cove = "a bright little harbor for slow
+mornings", Lighthouse Isle = "where the trade winds meet the sea", etc.). Beaches, reefs,
+markets, viewpoints, walks, food. Plain descriptive travel-guide voice — no invented history
+or lore, and never call the islands "fictional" anywhere in the UI.
+
+IMAGES: generic tropical stock. Pin exact Unsplash photo URLs (specific photo IDs — NOT
+source.unsplash.com/random, which reshuffles on every load and will change your photos
+mid-demo). Each <img>: descriptive alt, explicit width/height to stop layout shift,
+loading="lazy" below the fold, and an onError fallback to a #F6F6F6 block with the island
+name so a dead link never shows a broken-image icon. Photographer credit in the footer.
+Put every URL and all copy in one islandContent.ts keyed by island id.
+
+Style: Inter, sentence case, #000 / #6B6B6B / #E5E5E5, white cards 12px radius, black 48px
+buttons, 44px min tap targets. Island shapes on the map get role="link", tabindex="0",
+aria-label "View Coral Cove", pointer cursor, and a visible focus ring.
+
+VERIFY: no two map labels overlap at any breakpoint; all 7 cards and all 7 map shapes route
+correctly; each page has its own images; broken URLs show the fallback; dock buttons preset
+both island and dock.

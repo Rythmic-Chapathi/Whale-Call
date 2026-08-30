@@ -11,8 +11,25 @@ type CaribbeanMapProps = {
   destinationId?: string;
   targetPosition?: Coordinate;
   emergency?: boolean;
+  onIslandClick?: (islandId: string) => void;
   className?: string;
 };
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character] ?? character));
+}
+
+const islandLabelNudges: Record<string, { lat: number; lng: number }> = {
+  "coral-cove": { lat: 0.035, lng: 0 },
+  "pelican-key": { lat: 0.04, lng: 0.035 },
+  "mango-harbor": { lat: 0.035, lng: -0.015 },
+  "starfish-bay": { lat: 0.04, lng: -0.025 },
+  "lighthouse-isle": { lat: 0.045, lng: -0.06 },
+  "turtle-point": { lat: 0.04, lng: 0.03 },
+  "driftwood-island": { lat: 0.045, lng: 0.08 },
+};
+
+const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
 
 function boatMarkerPng(color: string, heading: number) {
   const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/fleet/whale-call-boat.png`;
@@ -27,10 +44,16 @@ export function CaribbeanMap({
   destinationId,
   targetPosition,
   emergency = false,
+  onIslandClick,
   className = '',
 }: CaribbeanMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onIslandClickRef = useRef(onIslandClick);
   const [mapError, setMapError] = useState(false);
+
+  useEffect(() => {
+    onIslandClickRef.current = onIslandClick;
+  }, [onIslandClick]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -41,11 +64,19 @@ export function CaribbeanMap({
         attributionControl: true,
         preferCanvas: true,
       }).setView([17.8, -62.75], 7.1);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        tileSize: 256,
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
+      if (mapboxToken) {
+        const satelliteLayer = L.tileLayer(
+          `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/512/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(mapboxToken)}`,
+          {
+            tileSize: 512,
+            zoomOffset: -1,
+            maxZoom: 18,
+            attribution: '&copy; Mapbox &copy; OpenStreetMap',
+          },
+        );
+        satelliteLayer.on('tileerror', () => setMapError(true));
+        satelliteLayer.addTo(map);
+      }
     } catch {
       setMapError(true);
       return;
@@ -74,6 +105,29 @@ export function CaribbeanMap({
         iconAnchor: [29, 21],
       });
       L.marker([boat.position.lat, boat.position.lng], { icon, title: `${boat.name} · ${boat.status.replace('_', ' ')}` }).addTo(markerGroup);
+    }
+    for (const island of islands) {
+      const selected = island.id === pickupId || island.id === destinationId;
+      const nudge = islandLabelNudges[island.id] ?? { lat: 0.04, lng: 0 };
+      const labelPosition = { lat: island.center.lat + nudge.lat, lng: island.center.lng + nudge.lng };
+      const shapeIcon = L.divIcon({
+        className: 'island-shape-icon',
+        html: `<button type="button" role="link" tabindex="0" class="island-shape-button${selected ? ' island-shape-selected' : ''}" aria-label="View ${escapeHtml(island.name)}"><span aria-hidden="true"></span></button>`,
+        iconSize: [42, 28],
+        iconAnchor: [21, 14],
+      });
+      L.marker([island.center.lat, island.center.lng], { icon: shapeIcon, title: `View ${island.name}`, zIndexOffset: 500 })
+        .on('click', () => onIslandClickRef.current?.(island.id))
+        .addTo(markerGroup);
+      const icon = L.divIcon({
+        className: 'island-label-icon',
+        html: `<button type="button" role="link" tabindex="0" class="island-label-button${selected ? ' island-label-selected' : ''}" aria-label="View ${escapeHtml(island.name)}">${escapeHtml(island.name)}</button>`,
+        iconSize: [112, 20],
+        iconAnchor: [56, -7],
+      });
+      L.marker([labelPosition.lat, labelPosition.lng], { icon, title: `View ${island.name}`, zIndexOffset: 1000 })
+        .on('click', () => onIslandClickRef.current?.(island.id))
+        .addTo(markerGroup);
     }
 
     const pickupIsland = islands.find(island => island.id === pickupId);
@@ -111,15 +165,15 @@ export function CaribbeanMap({
   }, [boats, destinationId, emergency, islands, pickupId, targetPosition]);
 
   if (mapError) {
-    return <div className={`caribbean-map map-grid grid place-items-center rounded-xl border border-border ${className}`}><div className="max-w-sm px-6 text-center"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">OpenStreetMap operating area</p><p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser. Port and fleet data remain available.</p></div></div>;
+    return <div className={`caribbean-map map-grid grid place-items-center rounded-xl border border-border ${className}`}><div className="max-w-sm px-6 text-center"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Whale Call operating area</p><p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser. Port and route data remain available.</p></div></div>;
   }
 
   return (
-    <div className={`caribbean-map relative overflow-hidden rounded-xl border border-border bg-muted ${className}`} data-testid="caribbean-map" aria-label="OpenStreetMap view of Caribbean islands, ports, and fleet">
+    <div className={`caribbean-map relative overflow-hidden rounded-xl border border-border bg-muted ${className}`} data-testid="caribbean-map" aria-label="Interactive chart of Caribbean islands, ports, and routes">
       <div ref={containerRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
         <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
-        <p className="mt-1 text-xs font-semibold">OpenStreetMap · live ports · shared boat visuals</p>
+        <p className="mt-1 text-xs font-semibold">{mapboxToken ? 'Mapbox satellite · live ports · shared route view' : 'Island chart · live ports · shared route view'}</p>
       </div>
     </div>
   );

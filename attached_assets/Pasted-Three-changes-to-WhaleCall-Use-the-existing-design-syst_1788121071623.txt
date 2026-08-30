@@ -1,0 +1,62 @@
+Three changes to WhaleCall. Use the existing design system: Inter (NOT the mono/serif),
+sentence case, no letter-spacing, black #000 primary / #6B6B6B secondary / #E5E5E5 borders,
+white cards, 8px radius, 44px min tap targets. Render real API errors, never "try again".
+
+═══ 1. FLEET PAGE — simplify status ═══
+Two user-facing states only:
+  on_trip + en_route  → "On trip"
+  available           → "Available"
+  offline             → exclude the boat from the list and from all counts
+Header stats: "Total boats / Available / On trip". DELETE the "Rescue ready" stat and the
+emergency-equipped shield badge from cards.
+
+⚠️ UI ONLY — do NOT remove `emergencyEquipped` from the Boat model or the fleet data. The
+/api/emergencies dispatcher filters on it; deleting the field breaks SOS entirely.
+
+Status chip restyle (currently uppercase letterspaced mono — replace):
+  Inter 12px/500, sentence case, no letter-spacing, 6px radius, 4px 10px padding
+  Available → #EAF6EC bg, #1B7F3B text
+  On trip   → #EEF2F7 bg, #3A5A80 text
+  Small solid 6px dot in the text color, left of the label.
+Also fix "Up To 4 Passengers" → "Up to 4 passengers".
+
+═══ 2. DRIVER REGISTRATION ═══
+Route /drivers/apply — public form, one page, grouped sections, all labels sentence case.
+Fields: full name, email, phone, home island (select), years operating a boat (number),
+boat classes qualified for (multi-checkbox: water taxi, cruiser, catamaran, speedboat,
+rescue), license/certification ID, languages (multi), typical availability (weekday/weekend/
+overnight), and three short-answer textareas (min 100 chars each, live counter):
+  "Describe your experience on these waters."
+  "Describe a difficult situation on the water and how you handled it."
+  "What emergency or first-aid training do you have?"
+Consent checkbox: "I confirm this information is accurate."
+
+POST /api/drivers/applications → { id, status: 'pending', submittedAt }. Zod-validate; return
+{ error, code, field } and highlight the offending field inline. Disable submit while in
+flight. On success show a confirmation panel with the application ID and "We'll review your
+application and email you." — do not clear the page to blank.
+Add GET /api/drivers/applications + a simple /drivers/applications review list (pending /
+approved / rejected) with approve+reject actions; approving creates a Driver record.
+
+═══ 3. DRIVER REVIEWS & RATINGS ═══
+New route /drivers/:id — driver profile: name, avatar initials, home island, years active,
+trips completed, boat classes, languages.
+Rating summary: large average to 1dp, filled star row, total review count, and a 5→1 bar
+distribution.
+Reviews list below: reviewer name, star row, relative date, body text. Newest first,
+paginated 10 at a time. Empty state: "No reviews yet."
+
+Write-review form (signed-in users only; if the trip history supports it, require a
+completed trip with that driver and show "You can review a driver after your trip"):
+  POST /api/drivers/:id/reviews  { rating 1-5, body ≤500 chars }
+  GET  /api/drivers/:id/reviews
+  One review per user per driver — return 409 ALREADY_REVIEWED with an edit option.
+Recompute and persist driver.rating as the live mean of reviews (seeded ratings become the
+starting reviews so the number never contradicts the list). Update it everywhere the rating
+appears — fleet cards, trip page, boat details.
+
+Star input must be a real radio group: keyboard-operable (arrows + enter), aria-label
+"Rate N out of 5", visible focus ring, 44px targets. Not clickable divs.
+
+Link driver names to /drivers/:id from fleet cards and the trip page.
+Seed 3-6 reviews for ~10 drivers so the feature isn't empty in a demo.

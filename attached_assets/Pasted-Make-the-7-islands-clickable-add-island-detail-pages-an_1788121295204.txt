@@ -1,0 +1,60 @@
+Make the 7 islands clickable, add island detail pages, and deep-link them into booking.
+Design system: Inter, sentence case, no letter-spacing, #000 text / #6B6B6B secondary /
+#E5E5E5 borders, white cards 12px radius, black 48px buttons, 44px min tap targets.
+Island IDs: coral-cove, driftwood-island, lighthouse-isle, mango-harbor, pelican-key,
+starfish-bay, turtle-point.
+
+═══ 1. CLICK TARGETS ═══
+Make clickable → /islands/:id
+  - the 7 island cards in the landing "Service area" section (whole card, one <a>, not a
+    nested link — keyboard focusable with a visible ring)
+  - each island shape/label on the SVG chart used on /book and the landing hero (add
+    role="link", tabindex, aria-label "View Coral Cove", hover cursor + subtle fill shift)
+
+═══ 2. ISLAND DETAIL PAGE — /islands/:id ═══
+Sections, top to bottom:
+  - Island name (h1), tagline as secondary text
+  - Hero strip: 3 small photos in a row (16:9, 12px radius, object-fit: cover)
+  - "Highlights" — 4-5 cards per island, each with a small image (4:3), a name, and one
+    sentence. Grid: 4 across desktop, 2 tablet, 1 mobile.
+  - "Docks" — the island's 2 docks by name, each with a "Book a ride here" button that
+    deep-links with BOTH island and dock preset
+  - "Getting here" — travel time and distance from the 3 nearest islands, computed from the
+    existing great-circle + cruise-speed logic (don't hardcode)
+  - Primary CTA, sticky on mobile: "Book a ride to [Island name]"
+  - "Nearby islands" — 3 cards linking to their pages
+404 → the standard "Page not found" page for an unknown island id.
+
+IMAGES: these are fictional islands, so use generic tropical stock. Pin exact Unsplash photo
+URLs (specific photo IDs, NOT source.unsplash.com/random — random URLs change per load and
+will break mid-demo). Every <img> needs descriptive alt text, width/height to prevent layout
+shift, loading="lazy" below the fold, and an onError fallback to a solid #F6F6F6 block with
+the island name so a dead link never shows a broken-image icon. Put photographer credit in
+the footer. Store all of it in one islandContent.ts keyed by island id — do not scatter URLs
+through components.
+
+Write 4-5 distinct highlights per island that match its existing tagline (e.g. Coral Cove is
+"a bright little harbor for slow mornings", Lighthouse Isle is "where the trade winds meet
+the sea"). Reefs, beaches, markets, viewpoints, harbors — no invented history, no lore.
+Plain descriptive sentences.
+
+═══ 3. DEEP LINK INTO BOOKING ═══
+/book?destinationIsland=<id>&destinationDock=<id optional>
+On load, read the params, validate the island exists and the dock belongs to it (ignore
+silently and fall back to normal flow if not), and pre-set the destination.
+Flow: still ask for PICKUP first — but show a pill above the form:
+  "Going to Mango Harbor · Sunset Steps   [Change]"
+Change clears the destination and returns to the normal 3-step flow.
+The step-2 island select must exclude the pickup island (the app currently lets you pick the
+same island for both, then silently does nothing on Continue).
+After choosing pickup + dock, skip straight to step 3 review since the destination is known.
+Update the step indicator so it doesn't claim "Step 2 of 3" for a step that never renders.
+
+═══ 4. VERIFY ═══
+  - All 7 cards and all 7 map shapes navigate to the right page
+  - Each detail page shows its own images, not a shared placeholder set
+  - "Book a ride to X" lands on /book with the destination pill filled and pickup empty
+  - Dock-level buttons preset the dock too
+  - A bad ?destinationIsland= value degrades to the normal flow, no crash
+  - No layout shift while images load; broken URLs show the fallback block
+  - Every island name in the UI is the display name, never a slug

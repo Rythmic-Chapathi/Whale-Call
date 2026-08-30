@@ -1,3 +1,4 @@
 - [Orval Zod compatibility](orval-zod-version.md) — generated API schemas require the workspace's Zod 4 runtime.
 - [Mapbox WebGL fallback](mapbox-webgl-fallback.md) — Mapbox must degrade safely because Replit’s screenshot browser may not expose WebGL.
 - [Leaflet polling lifecycle](leaflet-polling-lifecycle.md) — animated map transitions must be stopped before React replaces polling-driven map instances.
+- [Public map label ownership](public-map-label-ownership.md) — overview charts should not use basemap labels or fleet markers that compete with island navigation.

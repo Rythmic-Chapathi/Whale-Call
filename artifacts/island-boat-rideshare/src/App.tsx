@@ -1,13 +1,13 @@
-import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useClerk, useUser } from '@clerk/react';
 import { shadcn } from '@clerk/themes';
-import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
+import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams, useSearch } from 'wouter';
 import {
   Anchor, ArrowRight, BadgeCheck, Binoculars, BookOpen, Check, ChevronDown,
   CircleAlert, CircleCheck, Compass, Crosshair, HeartHandshake,
   LifeBuoy, LogOut, Menu, Navigation, Phone, Radio, Sailboat, ShieldCheck,
-  Star, Waves, X,
+  Star, Waves, X, Cross, Siren
 } from 'lucide-react';
 import {
   BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetBoatQueryKey, getGetFleetSummaryQueryKey,
@@ -18,6 +18,7 @@ import {
 import type { Dock, FleetBoat, Island, Trip, TripInput } from '@workspace/api-client-react';
 import NotFound from '@/pages/not-found';
 import { CaribbeanMap } from '@/components/CaribbeanMap';
+import { IslandDetailPage } from '@/IslandDetailPage';
 import { SupplyDispatchPage, SupplyRequestPage, SupplyTrackingPage } from '@/SupplyPages';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
@@ -27,7 +28,7 @@ const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const logoSrc = `${basePath || ''}/whale-call-logo.png`;
 const shellNav = [
   { href: '/book', label: 'Choose a Destination', icon: Navigation },
-  { href: '/supplies', label: 'Need Supplies?', icon: Sailboat },
+  { href: '/supplies', label: 'Need Supplies?', icon: Cross },
   { href: '/fleet', label: 'The Live Fleet', icon: Sailboat },
   { href: '/profile', label: 'Your Trips', icon: BookOpen },
 ];
@@ -91,7 +92,7 @@ function ErrorCard({ retry, message = 'The radio went quiet for a moment.' }: { 
 
 function ModePill({ emergency = false, supply = false }: { emergency?: boolean; supply?: boolean }) {
   return <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono-ui text-[10px] uppercase tracking-[.17em] ${emergency ? 'bg-destructive/10 text-destructive' : supply ? 'bg-amber-100 text-amber-800' : 'bg-secondary/20 text-primary'}`}>
-    <span className={`h-1.5 w-1.5 rounded-full ${emergency ? 'bg-destructive' : supply ? 'bg-amber-600' : 'bg-accent'}`} />{emergency ? 'Response mode' : supply ? 'Supply mode' : 'Voyage mode'}
+    <span className={`h-1.5 w-1.5 rounded-full ${emergency ? 'bg-destructive' : supply ? 'bg-amber-600' : 'bg-accent'}`} />{emergency ? 'Response mode' : supply ? 'Supply mode' : 'Travel'}
   </span>;
 }
 
@@ -114,7 +115,7 @@ function AppShell({ children, emergency = false, supply = false }: { children: R
       {open && <nav className="border-t border-border px-5 py-3 md:hidden">{shellNav.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-border/70 py-3 text-sm font-semibold" data-testid={`link-mobile-${item.label.toLowerCase().replaceAll(' ', '-')}`}>{item.label}</Link>)}<Link href="/emergency" className="block py-3 text-sm font-bold text-destructive" data-testid="link-mobile-emergency">Open Response mode</Link></nav>}
     </header>
     {children}
-    {!emergency ? <Link href="/emergency" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-destructive/20 bg-destructive px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-float"><LifeBuoy size={16} />Need help on the water</Link> : <Link href="/supplies" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-amber-700/20 bg-amber-600 px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-supplies"><Sailboat size={16} />Send supplies too</Link>}
+    {!emergency ? <Link href="/emergency" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-destructive/20 bg-destructive px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-float"><LifeBuoy size={16} />Need help on the water</Link> : <Link href="/supplies" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-amber-700/20 bg-amber-600 px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-supplies"><Cross size={16} />Send supplies too</Link>}
   </div>;
 }
 
@@ -123,20 +124,22 @@ function Footer() {
   return <footer className="border-t border-sidebar-border bg-sidebar px-5 py-12 text-sidebar-foreground lg:px-8"><div className="mx-auto grid max-w-[1240px] gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
     <div><Logo dark /><p className="mt-5 max-w-xs text-sm leading-6 text-sidebar-foreground/65">Local captains. Clear fares. A better way across the islands.</p><p className="mt-6 font-mono-ui text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Staying on channel · {health?.status === 'ok' ? 'All boats accounted for' : 'Coastwatch online'}</p></div>
     <div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-secondary">Navigate</p><div className="mt-4 grid gap-3 text-sm text-sidebar-foreground/70"><Link href="/fleet" data-testid="footer-fleet">The fleet</Link><Link href="/profile" data-testid="footer-profile">Your logbook</Link><Link href="/emergency" data-testid="footer-emergency">Response mode</Link></div></div>
-    <div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-secondary">Whale Call office</p><p className="mt-4 text-sm leading-6 text-sidebar-foreground/70">VHF channel 16<br />Daily, first light to last launch<br />hello@whalecall.local</p></div>
+     <div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-secondary">Whale Call office</p><p className="mt-4 text-sm leading-6 text-sidebar-foreground/70">VHF channel 16<br />Daily, first light to last launch<br />hello@whalecall.local</p><p className="mt-5 text-xs leading-5 text-sidebar-foreground/50">Island photography: <a className="underline underline-offset-4" href="https://unsplash.com" target="_blank" rel="noreferrer">Unsplash contributors</a></p></div>
   </div></footer>;
 }
 
 function Landing() {
   const { data: islands, isLoading, isError, refetch } = useListIslands({ query: { queryKey: getListIslandsQueryKey() } });
-  const { data: fleet } = useListFleet(undefined, { query: { queryKey: getListFleetQueryKey() } });
   const { data: summary } = useGetFleetSummary({ query: { queryKey: getGetFleetSummaryQueryKey() } });
   return <AppShell><main>
+
     <section className="relative overflow-hidden bg-sidebar px-5 pb-24 pt-16 text-sidebar-foreground lg:px-8 lg:pb-32 lg:pt-24">
-      <div className="pointer-events-none absolute -right-28 -top-36 h-[550px] w-[550px] rounded-full border-[70px] border-secondary/10" /><div className="pointer-events-none absolute bottom-0 left-[38%] h-36 w-36 rounded-full bg-accent/20 blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 -top-32 h-[600px] w-[600px] rounded-full border-[80px] border-white/5" />
+     <div
+                                                                                                                                             className="pointer-events-none absolute bottom-0 left-[38%] h-36 w-36 rounded-full bg-accent/20 blur-3xl" />
       <div className="relative mx-auto grid max-w-[1240px] items-end gap-14 lg:grid-cols-[1.02fr_.98fr]">
           <div className="rise-in">
-            <h1 className="mt-0 max-w-4xl font-display text-7xl font-semibold leading-tight tracking-[-.055em] text-secondary">
+            <h1 className="mt-0 -mt-6 max-w-4xl font-display text-7xl font-semibold leading-tight tracking-[-.055em] text-secondary">
               Adaptive Maritime Dispatch.
             </h1>
             <p className="mt-8 max-w-md text-base leading-7 text-sidebar-foreground/70">
@@ -145,40 +148,40 @@ function Landing() {
             <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
               <Link href="/book" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] bg-secondary px-5 py-4 text-sm font-extrabold text-sidebar transition-transform hover:-translate-y-1" data-testid="link-hero-book">
                 <span>
-                  <span className="block text-[10px] uppercase tracking-[.16em] opacity-60">Voyage mode</span>
-                  <span className="mt-1 block">Plan a crossing</span>
+                  <span className="block text-[10px] uppercase tracking-[.16em] opacity-60">Travel</span>
+                  <span className="mt-1 block whitespace-nowrap">Plan a crossing</span>
                 </span>
-                <ArrowRight size={18} />
+                <ArrowRight className="shrink-0" size={18} />
               </Link>
               <Link href="/supplies" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] bg-amber-600 px-5 py-4 text-sm font-extrabold text-white transition-transform hover:-translate-y-1" data-testid="link-hero-supplies">
                 <span>
-                  <span className="block text-[10px] uppercase tracking-[.16em] text-white/70">Supply mode</span>
-                  <span className="mt-1 block">Send essentials</span>
+                  <span className="block text-[10px] uppercase tracking-[.16em] text-white/70">Supplies</span>
+                  <span className="mt-1 block whitespace-nowrap">Receive essentials</span>
                 </span>
-                <Sailboat size={18} />
+                <Cross className="shrink-0" size={18} />
               </Link>
               <Link href="/emergency" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] border border-destructive/50 bg-destructive px-5 py-4 text-sm font-extrabold text-white transition-transform hover:-translate-y-1" data-testid="link-hero-emergency">
                 <span>
-                  <span className="block text-[10px] uppercase tracking-[.16em] text-white/70">Response mode</span>
-                  <span className="mt-1 block">Need help now</span>
+                  <span className="block text-[10px] uppercase tracking-[.16em] text-white/70">Emergencies</span>
+                  <span className="mt-1 block whitespace-nowrap">Need help now</span>
                 </span>
-                <LifeBuoy size={18} />
+                <Siren className="shrink-0" size={18} />
               </Link>
             </div>
             <Link href="/fleet" className="focus-ring mt-4 inline-flex items-center gap-2 text-sm font-bold text-sidebar-foreground/80 hover:text-sidebar-foreground" data-testid="link-hero-fleet">
-              Meet the live fleet <ArrowRight size={15} />
+              List of live fleet <ArrowRight size={15} />
             </Link>
           </div>
           <div className="rise-in-delay relative mx-auto w-full max-w-[680px] lg:ml-auto">
             <div className="relative h-[460px] overflow-hidden rounded-xl border border-sidebar-foreground/10 shadow-2xl sm:h-[560px] lg:h-[680px]">
-          <CaribbeanMap islands={islands ?? []} boats={fleet ?? []} className="h-full min-h-full border-0" />
+           <CaribbeanMap islands={islands ?? []} onIslandClick={id => { window.location.href = `${basePath || ''}/islands/${id}`; }} className="h-full min-h-full border-0" />
           <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-sidebar/90 p-4 text-sidebar-foreground backdrop-blur-md"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">Right now</p><p className="mt-1 text-sm font-bold">{summary?.available ?? '—'} boats ready to launch</p></div><div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-sidebar"><Waves size={18} /></div></div>
         </div></div>
       </div>
     </section>
-     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Where we launch</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Our fleet operates across 7 Carribean islands.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
+     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Our fleet operates across 7 Carribean islands.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
       {isLoading ? <div className="mt-10 grid gap-4 sm:grid-cols-3"><LoadingCard /><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-10"><ErrorCard retry={refetch} /></div> : <div className="mt-10 grid gap-4 sm:grid-cols-3">{(islands ?? []).map((island, i) => <IslandCard key={island.id} island={island} index={i} />)}</div>}</div></section>
-    <section className="px-5 py-20 lg:px-8"><div className="mx-auto grid max-w-[1240px] items-center gap-12 rounded-[34px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:grid-cols-[1fr_auto] lg:py-14"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-secondary">When the ordinary is not enough</p><h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-tight tracking-[-.04em]">Response mode is always one tap away.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/70">For a medical need, a stranded boat, or water coming in. Our rescue-equipped boats and trained captains know what to do next.</p></div><Link href="/emergency" className="focus-ring inline-flex items-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-sm font-extrabold text-white hover:-translate-y-1" data-testid="link-home-emergency">Open Response mode <LifeBuoy size={18} /></Link></div></section>
+    <section className="px-5 py-20 lg:px-8"><div className="mx-auto grid max-w-[1240px] items-center gap-12 rounded-[34px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:grid-cols-[1fr_auto] lg:py-14"><div><h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-tight tracking-[-.04em]">Response mode is always one tap away.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/70">For a medical need, a stranded boat, or water coming in. Contact rescue-equipped boats and trained captains with the press of a button.</p></div><Link href="/emergency" className="focus-ring inline-flex items-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-sm font-extrabold text-white hover:-translate-y-1" data-testid="link-home-emergency">Emergency <Siren size={18} /></Link></div></section>
     <Footer />
   </main></AppShell>;
 }
@@ -192,12 +195,21 @@ function ValueCard({ n, icon: Icon, title, text }: { n: string; icon: typeof Com
 }
 
 function IslandCard({ island, index }: { island: Island; index: number }) {
-  return <Link href="/book" className="group focus-ring relative min-h-[180px] overflow-hidden rounded-[26px] border border-primary/10 bg-card p-6 shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-island-${island.id}`}><div className={`absolute -right-9 -top-9 h-36 w-36 rounded-full ${index === 1 ? 'bg-secondary/60' : 'bg-accent/15'} transition-transform group-hover:scale-125`} /><div className="relative"><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Island 0{index + 1}</p><h3 className="mt-4 font-display text-3xl font-semibold">{island.name}</h3><p className="mt-2 max-w-[210px] text-sm text-muted-foreground">{island.tagline}</p><p className="mt-5 text-xs font-bold text-primary">{island.docks?.length ?? 0} public docks <ArrowRight className="ml-1 inline" size={13} /></p></div></Link>;
+  return (
+    <Link href={`/islands/${island.id}`} className="group focus-ring relative min-h-[180px] overflow-hidden rounded-[26px] border border-primary/10 bg-card p-6 shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-island-${island.id}`}>
+      <div className="absolute -right-9 -top-9 h-36 w-36 rounded-full bg-accent/15 transition-transform group-hover:scale-125" />
+      <div className="relative">
+        <p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Island 0{index + 1}</p>
+        <h3 className="mt-4 font-display text-3xl font-semibold">{island.name}</h3>
+        <p className="mt-2 max-w-[210px] text-sm text-muted-foreground">{island.tagline}</p>
+        <p className="mt-5 text-xs font-bold text-primary">{island.docks?.length ?? 0} public docks <ArrowRight className="ml-1 inline" size={13} /></p>
+      </div>
+    </Link>
+  );
 }
 
 function IslandMap({ islands, pickupId, destinationId, emergency = false }: { islands: Island[]; pickupId?: string; destinationId?: string; emergency?: boolean }) {
-  const { data: boats } = useListFleet(undefined, { query: { queryKey: getListFleetQueryKey() } });
-  return <CaribbeanMap islands={islands} boats={boats ?? []} pickupId={pickupId} destinationId={destinationId} emergency={emergency} />;
+  return <CaribbeanMap islands={islands} pickupId={pickupId} destinationId={destinationId} emergency={emergency} onIslandClick={id => { window.location.href = `${basePath || ''}/islands/${id}`; }} />;
 }
 
 function FleetPage() {
@@ -216,7 +228,7 @@ function FleetPage() {
       .toLowerCase()
       .includes(normalizedSearch);
   }), [fleet, normalizedSearch]);
-  return <AppShell><main className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-6"><div><ModePill /><h1 className="mt-5 font-display text-5xl font-semibold tracking-[-.05em] sm:text-6xl">The live fleet.</h1><p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Every boat here is canonical. If you can see it, it is on the water with us today.</p></div><div className="flex gap-6 rounded-2xl border border-border bg-card px-5 py-4"><Stat label="Total boats" value={summary?.total} /><Stat label="Ready now" value={summary?.available} /><Stat label="Rescue ready" value={summary?.rescueReady} /></div></div>
+  return <AppShell><main className="mx-auto max-w-[1240px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-6"><div><ModePill /><h1 className="mt-5 font-display text-5xl font-semibold tracking-[-.05em] sm:text-6xl">The live fleet.</h1><p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Fleet Directory: Captains, Boats, and Availability</p></div><div className="flex gap-6 rounded-2xl border border-border bg-card px-5 py-4"><Stat label="Total boats" value={summary?.total} /><Stat label="Ready now" value={summary?.available} /><Stat label="Rescue ready" value={summary?.rescueReady} /></div></div>
      <div className="mt-12 flex flex-wrap items-center gap-3 border-y border-border py-4"><label className="relative min-w-[240px] flex-1"><span className="sr-only">Search fleet</span><input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search boats or captains" className="focus-ring w-full rounded-full border border-border bg-card px-4 py-2.5 pr-10 text-sm font-semibold placeholder:text-muted-foreground" data-testid="input-fleet-search" />{searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="focus-ring absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Clear fleet search" data-testid="button-clear-fleet-search"><X size={15} /></button>}</label><select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="focus-ring rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold" data-testid="select-boat-class"><option value="">All boat classes</option><option value={BoatClass.water_taxi}>Water taxi</option><option value={BoatClass.cruiser}>Cruiser</option><option value={BoatClass.catamaran}>Catamaran</option><option value={BoatClass.speedboat}>Speedboat</option></select><button type="button" onClick={() => setRescueOnly(!rescueOnly)} aria-pressed={rescueOnly} className={`focus-ring inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold ${rescueOnly ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card'}`} data-testid="button-filter-rescue"><ShieldCheck size={16} />Rescue-equipped</button>{hasFilters && <button type="button" onClick={() => { setSearchQuery(''); setClassFilter(''); setRescueOnly(false); }} className="focus-ring rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground" data-testid="button-clear-fleet-filters">Clear filters</button>}<span className="ml-auto font-mono-ui text-[10px] uppercase tracking-[.15em] text-muted-foreground">{filteredFleet.length} vessels in view</span></div>
      {isLoading ? <div className="mt-8 grid gap-5 md:grid-cols-2"><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-8"><ErrorCard retry={refetch} /></div> : filteredFleet.length ? <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{filteredFleet.map(boat => <BoatCard key={boat.id} boat={boat} />)}</div> : <div className="mt-8"><EmptyCard title={normalizedSearch ? 'No boats match that search.' : 'No boats in that channel.'} text={normalizedSearch ? 'Try a boat name, captain, class, or clear the search.' : 'Try a wider filter and check back with the dockmaster.'} /></div>}</main><Footer /></AppShell>;
 }
@@ -234,9 +246,26 @@ function BookingPage() {
   const { data: islands, isLoading, isError, refetch } = useListIslands({ query: { queryKey: getListIslandsQueryKey() } });
   const createTrip = useCreateTrip();
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const appliedPreset = useRef('');
   const [step, setStep] = useState(1);
   const [validation, setValidation] = useState('');
   const [form, setForm] = useState<TripInput>({ pickupIslandId: '', pickupDockId: '', destinationIslandId: '', destinationDockId: '', boatClass: BoatClass.water_taxi, passengerCount: 1 });
+  const [destinationPreset, setDestinationPreset] = useState(false);
+  useEffect(() => {
+    if (!islands) return;
+    const params = new URLSearchParams(search);
+    const islandId = params.get('destinationIsland');
+    const dockId = params.get('destinationDock');
+    const target = islands.find(island => island.id === islandId);
+    const dock = dockId ? target?.docks.find(item => item.id === dockId) : target?.docks[0];
+    const preset = target && dock ? { islandId: target.id, dockId: dock.id } : null;
+    const key = preset ? `${preset.islandId}:${preset.dockId}` : 'none';
+    if (appliedPreset.current === key) return;
+    appliedPreset.current = key;
+    setDestinationPreset(Boolean(preset));
+    setForm(current => ({ ...current, destinationIslandId: preset?.islandId ?? '', destinationDockId: preset?.dockId ?? '' }));
+  }, [islands, search]);
   const pickup = islands?.find(i => i.id === form.pickupIslandId);
   const destination = islands?.find(i => i.id === form.destinationIslandId);
   const validRoute = form.pickupIslandId && form.destinationIslandId && form.pickupIslandId !== form.destinationIslandId && form.pickupDockId && form.destinationDockId;
@@ -245,23 +274,26 @@ function BookingPage() {
   const routeDistance = distanceKm(pickupDock?.position, destinationDock?.position);
   const multiplier = form.boatClass === BoatClass.speedboat ? 1.8 : form.boatClass === BoatClass.catamaran ? 1.5 : form.boatClass === BoatClass.cruiser ? 1.25 : 1;
   const estimatedFare = Math.round(18 + routeDistance * 6.2 * multiplier);
+  const progressStep = destinationPreset && step === 3 ? 2 : step;
   const submit = (e: FormEvent) => {
     e.preventDefault(); setValidation('');
     if (step === 1 && !form.pickupDockId) { setValidation('Choose a departure island and dock.'); return; }
     if (step === 2 && !validRoute) { setValidation(form.pickupIslandId === form.destinationIslandId ? 'Departure and destination must be different islands.' : 'Choose a different destination island and an arrival dock.'); return; }
     if (form.passengerCount > boatCapacities[form.boatClass]) { setValidation(`That boat class carries up to ${boatCapacities[form.boatClass]} passengers.`); return; }
+    if (step === 1 && destinationPreset) { setStep(3); return; }
     if (step < 3) { setStep(step + 1); return; }
     createTrip.mutate({ data: form }, { onSuccess: trip => { queryClient.invalidateQueries({ queryKey: getGetTripQueryKey(trip.id) }); setLocation(`/trip/${trip.id}`); } });
   };
   if (isLoading) return <AppShell><main className="mx-auto max-w-[900px] px-5 py-16"><LoadingCard /></main></AppShell>;
   if (isError) return <AppShell><main className="mx-auto max-w-[900px] px-5 py-16"><ErrorCard retry={refetch} /></main></AppShell>;
-  return <AppShell><main className="mx-auto max-w-[1180px] px-5 py-12 lg:px-8 lg:py-16"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><ModePill /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">New crossing</p><h1 className="mt-4 font-display text-5xl font-semibold leading-[.95] tracking-[-.05em]">Where shall<br />we take you?</h1><p className="mt-5 text-sm leading-6 text-muted-foreground">Tell us the simple bits. A real captain will handle the rest.</p><div className="mt-8 lg:sticky lg:top-24"><IslandMap islands={islands ?? []} pickupId={form.pickupIslandId} destinationId={form.destinationIslandId} /></div><div className="mt-8 flex gap-2">{[1,2,3].map(n => <div key={n} className={`h-1.5 flex-1 rounded-full ${n <= step ? 'bg-secondary' : 'bg-muted'}`} />)}</div><p className="mt-3 font-mono-ui text-[10px] uppercase tracking-[.15em] text-muted-foreground">Step {step} of 3</p></div>
+  return <AppShell><main className="mx-auto max-w-[1180px] px-5 py-12 lg:px-8 lg:py-16"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><ModePill /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">New crossing</p><h1 className="mt-4 font-display text-5xl font-semibold leading-[.95] tracking-[-.05em]">Where shall<br />we take you?</h1><p className="mt-5 text-sm leading-6 text-muted-foreground">Tell us the simple bits. A real captain will handle the rest.</p><div className="mt-8 lg:sticky lg:top-24"><IslandMap islands={islands ?? []} pickupId={form.pickupIslandId} destinationId={form.destinationIslandId} /></div><div className="mt-8 flex gap-2">{(destinationPreset ? [1, 2] : [1, 2, 3]).map(n => <div key={n} className={`h-1.5 flex-1 rounded-full ${n <= progressStep ? 'bg-secondary' : 'bg-muted'}`} />)}</div><p className="mt-3 font-mono-ui text-[10px] uppercase tracking-[.15em] text-muted-foreground">Step {progressStep} of {destinationPreset ? 2 : 3}</p></div>
       <form onSubmit={submit} className="rounded-[32px] border border-border bg-card p-6 shadow-lg sm:p-9" data-testid="form-booking">
-        {step === 1 && <><h2 className="font-display text-3xl font-semibold">Pick your waterline</h2><p className="mt-2 text-sm text-muted-foreground">Choose the island and dock you are leaving from.</p><div className="mt-8 grid gap-5"><IslandSelect label="Leaving from" value={form.pickupIslandId} islands={islands ?? []} onChange={id => setForm({ ...form, pickupIslandId: id, pickupDockId: '' })} testId="select-pickup-island" /><DockSelect label="Departure dock" value={form.pickupDockId} docks={pickup?.docks ?? []} onChange={id => setForm({ ...form, pickupDockId: id })} testId="select-pickup-dock" /></div></>}
+        {destinationPreset && destination && <div className="mb-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary/20 px-4 py-3 text-sm font-bold text-primary" data-testid="booking-destination-preset"><span>Going to {destination.name} · {destinationDock?.name}</span><button type="button" onClick={() => { appliedPreset.current = 'cleared'; setDestinationPreset(false); setForm(current => ({ ...current, destinationIslandId: '', destinationDockId: '' })); setValidation(''); setStep(1); }} className="focus-ring min-h-11 rounded-full px-3 underline underline-offset-4 hover:bg-secondary/30" data-testid="button-change-destination">Change</button></div>}
+        {step === 1 && <><h2 className="font-display text-3xl font-semibold">Pick your waterline</h2><p className="mt-2 text-sm text-muted-foreground">Choose the island and dock you are leaving from.</p><div className="mt-8 grid gap-5"><IslandSelect label="Leaving from" value={form.pickupIslandId} islands={(islands ?? []).filter(island => !destinationPreset || island.id !== form.destinationIslandId)} onChange={id => setForm({ ...form, pickupIslandId: id, pickupDockId: '' })} testId="select-pickup-island" /><DockSelect label="Departure dock" value={form.pickupDockId} docks={pickup?.docks ?? []} onChange={id => setForm({ ...form, pickupDockId: id })} testId="select-pickup-dock" /></div></>}
         {step === 2 && <><h2 className="font-display text-3xl font-semibold">Choose your landing</h2><p className="mt-2 text-sm text-muted-foreground">We will put you down at the dock that makes sense.</p><div className="mt-8 grid gap-5"><IslandSelect label="Going to" value={form.destinationIslandId} islands={(islands ?? []).filter(island => island.id !== form.pickupIslandId)} onChange={id => { setValidation(''); setForm({ ...form, destinationIslandId: id, destinationDockId: '' }); }} testId="select-destination-island" /><DockSelect label="Arrival dock" value={form.destinationDockId} docks={destination?.docks ?? []} onChange={id => setForm({ ...form, destinationDockId: id })} testId="select-destination-dock" /></div></>}
         {step === 3 && <><h2 className="font-display text-3xl font-semibold">Make it yours</h2><p className="mt-2 text-sm text-muted-foreground">One last look before we call a captain.</p><div className="mt-7 divide-y divide-border rounded-2xl border border-border"><SummaryLine label="Route" value={`${pickup?.name ?? '—'} → ${destination?.name ?? '—'}`} /><SummaryLine label="Docks" value={`${pickupDock?.name ?? '—'} → ${destinationDock?.name ?? '—'}`} /><SummaryLine label="Estimated fare" value={routeDistance ? `About $${estimatedFare}` : '—'} /><label className="flex items-center justify-between gap-4 p-4"><span className="text-sm font-semibold">Passengers</span><input type="number" min={1} max={16} value={form.passengerCount} onChange={e => { const passengerCount = Number(e.target.value); const boatClass = passengerCount > boatCapacities[form.boatClass] ? BoatClass.catamaran : form.boatClass; setValidation(''); setForm({ ...form, passengerCount, boatClass }); }} className="focus-ring w-20 rounded-xl border border-border bg-background px-3 py-2 text-center font-bold" data-testid="input-passengers" /></label><label className="flex items-center justify-between gap-4 p-4"><span className="text-sm font-semibold">Boat class</span><select value={form.boatClass} onChange={e => { const boatClass = e.target.value as TripInput['boatClass']; if (form.passengerCount <= boatCapacities[boatClass]) setForm({ ...form, boatClass }); }} className="focus-ring rounded-xl border border-border bg-background px-3 py-2 text-sm font-bold" data-testid="select-boat-class-booking"><option value={BoatClass.water_taxi} disabled={form.passengerCount > 4}>Water taxi · up to 4</option><option value={BoatClass.cruiser} disabled={form.passengerCount > 8}>Cruiser · up to 8</option><option value={BoatClass.catamaran}>Catamaran · up to 16</option><option value={BoatClass.speedboat} disabled={form.passengerCount > 4}>Speedboat · up to 4</option></select></label></div>{createTrip.isError && <p className="mt-4 text-sm font-semibold text-destructive" data-testid="status-booking-error">{getApiErrorMessage(createTrip.error, 'We could not reach the dock. Check your connection and try again.')}</p>}</>}
         {validation && <p className="mt-5 rounded-xl bg-destructive/10 p-3 text-sm font-semibold text-destructive" role="alert" data-testid="status-booking-validation">{validation}</p>}
-        <div className="mt-9 flex items-center justify-between gap-3">{step > 1 ? <Button kind="quiet" type="button" onClick={() => setStep(step - 1)} data-testid="button-booking-back">Back</Button> : <Link href="/emergency" className="text-xs font-bold text-destructive" data-testid="link-booking-emergency">Need Response mode?</Link>}<Button type="submit" disabled={createTrip.isPending} data-testid="button-booking-next">{createTrip.isPending ? 'Calling a captain…' : step === 3 ? 'Call my boat' : 'Continue'} <ArrowRight size={16} /></Button></div>
+        <div className="mt-9 flex items-center justify-between gap-3">{step > 1 ? <Button kind="quiet" type="button" onClick={() => setStep(step === 3 && destinationPreset ? 1 : step - 1)} data-testid="button-booking-back">Back</Button> : <Link href="/emergency" className="text-xs font-bold text-destructive" data-testid="link-booking-emergency">Need Response mode?</Link>}<Button type="submit" disabled={createTrip.isPending} data-testid="button-booking-next">{createTrip.isPending ? 'Calling a captain…' : step === 3 ? 'Call my boat' : 'Continue'} <ArrowRight size={16} /></Button></div>
       </form></div></main></AppShell>;
 }
 
@@ -346,7 +378,7 @@ function Router() {
     setIsNavigating(true);
     window.setTimeout(() => { setLocation(stripBase(url.pathname) + url.search + url.hash); window.setTimeout(() => setIsNavigating(false), 240); }, 520);
   }}>
-    <Switch><Route path="/" component={HomeRoute} /><Route path="/book" component={BookingPage} /><Route path="/supplies" component={() => <AppShell supply><SupplyRequestPage /></AppShell>} /><Route path="/run/:id" component={() => <AppShell supply><SupplyTrackingPage /></AppShell>} /><Route path="/dispatch" component={() => <AppShell supply><SupplyDispatchPage /></AppShell>} /><Route path="/fleet" component={FleetPage} /><Route path="/trip/:id" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>
+    <Switch><Route path="/" component={HomeRoute} /><Route path="/islands/:id" component={IslandDetailPage} /><Route path="/book" component={BookingPage} /><Route path="/supplies" component={() => <AppShell supply><SupplyRequestPage /></AppShell>} /><Route path="/run/:id" component={() => <AppShell supply><SupplyTrackingPage /></AppShell>} /><Route path="/dispatch" component={() => <AppShell supply><SupplyDispatchPage /></AppShell>} /><Route path="/fleet" component={FleetPage} /><Route path="/trip/:id" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>
     {isNavigating && <div className="fixed inset-0 z-[100] grid place-items-center bg-sidebar/90 text-sidebar-foreground backdrop-blur-sm" role="status" aria-live="polite"><div className="text-center"><img src={logoSrc} alt="" className="mx-auto h-20 w-20 animate-spin rounded-full border-4 border-secondary shadow-2xl [animation-duration:1.4s]" /><p className="mt-5 font-mono-ui text-[10px] uppercase tracking-[.22em] text-secondary">Charting the next passage</p></div><div className="absolute left-0 top-0 h-1.5 w-full overflow-hidden bg-white/10"><span className="loading-current block h-full bg-secondary" /></div></div>}
   </div>;
 }

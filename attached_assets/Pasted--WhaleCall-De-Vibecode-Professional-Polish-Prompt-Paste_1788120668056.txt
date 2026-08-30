@@ -1,0 +1,268 @@
+# WhaleCall — De-Vibecode & Professional Polish Prompt
+
+Paste everything below the line into Claude Code / the Replit agent working in the WhaleCall repo. Every "current" string below was read off the live site, so the agent can find and replace them exactly.
+
+---
+
+# TASK: Replace WhaleCall's typography and copy system with a professional, Uber-style one
+
+The app currently reads as AI-generated. Two things cause it, and both must go:
+
+1. **The letterspaced uppercase monospace "eyebrow" label above every section** — `WHALE CALL OPERATING AREA`, `COASTWATCH DISPATCH`, `WHERE WE LAUNCH`, `NEW CROSSING`, `PASSAGE DETAILS`, `RIGHT NOW`, `OFF THE CHART`, `ISLAND #1`. This one pattern is the single biggest tell. It appears on nearly every screen.
+2. **Whimsical, over-written product copy** — "Voyage mode", "Response mode", "Pick your waterline", "Not an app. A local hand.", "Seven fictional islands. One good idea.", "A small squall.", "Keep calm. We know this water."
+
+Target: **a real transportation product.** Think Uber, Lyft, Bolt — plain functional language, one clean sans-serif, high contrast, generous whitespace, no decorative flourishes. Nothing should sound like it's narrating an adventure.
+
+**Do not change the landing page title "Adaptive Maritime Dispatch."** That stays exactly as-is. Everything else in this document is in scope.
+
+---
+
+## 1. Typography — replace the whole system
+
+### Remove
+- **The display serif** used for every headline ("Get there by water.", "The live fleet.", "Keep calm. We know this water."). Delete the font import and every rule that applies it. A high-contrast decorative serif on a dispatch app is the wrong register entirely.
+- **The monospace eyebrow font** and, critically, the `text-transform: uppercase` + wide `letter-spacing` treatment applied with it. Search the codebase for `letter-spacing` values above `0.1em` and for any shared `.eyebrow` / `.kicker` / `.label` / `.overline` class and remove them.
+
+### Replace with one family
+Use **Inter** (or the system stack `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`). One family for everything — headings, body, labels, buttons. Load weights 400 / 500 / 600 / 700 only.
+
+### Type scale (use these exact values)
+
+| Role | Size / Weight | Notes |
+|---|---|---|
+| Page title (h1) | 40px / 700, line-height 1.15, letter-spacing −0.02em | 32px on mobile |
+| Section heading (h2) | 28px / 600, letter-spacing −0.01em | |
+| Card / subsection (h3) | 20px / 600 | |
+| Body | 16px / 400, line-height 1.55 | Never below 15px for real content |
+| Secondary text | 14px / 400, muted gray | |
+| Form label | 14px / 500, **sentence case, no letter-spacing** | |
+| Button | 16px / 600 | |
+| Stat number | 32px / 700, tabular-nums | |
+
+**Hard rules:**
+- Negative letter-spacing on large headings, `0` everywhere else. **No positive letter-spacing anywhere in the app.**
+- **Sentence case everywhere.** The only uppercase permitted is a live status chip (`ARRIVING`, `EN ROUTE`) — and even those become sentence case: `Arriving`, `En route`, `Available`, `Offline`.
+- No italics, no small-caps, no decorative dividers, no `·` interpuncts strung between phrases.
+
+---
+
+## 2. Delete the eyebrow pattern entirely
+
+Every kicker label above a heading gets **deleted, not reworded.** If the heading below it can't stand alone, rewrite the heading — don't reintroduce a label.
+
+Delete all of these on sight:
+
+`WHALE CALL OPERATING AREA` · `WHALE CALL · LOCAL PASSAGE, DONE RIGHT` · `WHALE CALL CHART` · `WHALE CALL OFFICE` · `COASTWATCH DISPATCH` · `WHERE WE LAUNCH` · `NEW CROSSING` · `PASSAGE DETAILS` · `NAVIGATE` · `RIGHT NOW` · `OFF THE CHART` · `WHEN THE ORDINARY IS NOT ENOUGH` · `STAYING ON CHANNEL · ALL BOATS ACCOUNTED FOR` · `ISLAND #1`–`#7` · `VOYAGE MODE` · `RESPONSE MODE` · `CROSSING TRIP-XXXX`
+
+The two mode pills in the header (`VOYAGE MODE` / `RESPONSE MODE`) are removed completely — see §3.
+
+---
+
+## 3. Kill the "modes"
+
+"Voyage mode" and "Response mode" are the most fictional-sounding thing in the product. Uber doesn't have modes; it has a ride screen and an emergency button.
+
+- **Remove both header pills.** They communicate nothing a user needs.
+- **"Voyage mode" → just the default app.** No label at all.
+- **"Response mode" → "Emergency".** Everywhere: page heading, buttons, links, the floating action button, the footer link.
+- The emergency page keeps its **dark, red-accented treatment** — that's genuinely good UX for an emergency screen and should stay. Only the *language* changes.
+
+---
+
+## 4. Exact copy replacements
+
+Find and replace these strings. Where a heading and its subtext both change, both are listed.
+
+### Header / navigation
+| Current | New |
+|---|---|
+| Book a crossing | Book a ride |
+| The live fleet | Boats |
+| Your logbook | Trips |
+| Sign in | Sign in *(keep)* |
+| Create account | Sign up |
+
+Also **fix the broken link**: "Book a crossing" currently points to `/`. It must point to `/book`.
+
+### Landing page
+| Current | New |
+|---|---|
+| *Title* | **Adaptive Maritime Dispatch** — DO NOT CHANGE |
+| A ride across the bay, called by people who know every shoal, dock, and changing tide. | Request a boat between islands, or call for emergency assistance on the water. |
+| **Plan a crossing** (button) | Book a ride |
+| **Need help now** (button) | Emergency |
+| Meet the live fleet → | View available boats |
+| Not an app. A local hand. | Why WhaleCall |
+| From the first call to the last wake, we keep you in the loop. No surge. No mystery dock. | Transparent pricing, verified captains, and live tracking on every trip. |
+| Know the water | Live tracking |
+| Every route is drawn by island hands, not an algorithm alone. | Follow your boat's position and arrival time from booking to dock. |
+| See your captain | Verified captains |
+| A name, a rating, and a boat you can recognize at the dock. | Every captain is licensed, rated, and shown to you before departure. |
+| Travel looked after | Upfront pricing |
+| Clear pricing and a coastwatch team on channel if plans shift. | See your fare before you book. No surge pricing, no hidden fees. |
+| Seven fictional islands. One good idea. | Service area |
+| Choose your dock → | View islands |
+| 2 public docks → | 2 docks |
+| Response mode is always one tap away. | Emergency assistance |
+| For a medical need, a stranded boat, or water coming in. Our rescue-equipped boats and trained captains know what to do next. | Request an immediate response for a medical emergency, a disabled vessel, or a boat taking on water. Rescue-equipped boats are dispatched to your location. |
+| **Open Response mode** (button) | Request emergency help |
+| 54 boats ready to launch | 54 boats available |
+
+### Booking flow (`/book`)
+| Current | New |
+|---|---|
+| Where shall we take you? | Book a ride |
+| Tell us the simple bits. A real captain will handle the rest. | Choose your pickup and destination. |
+| Pick your waterline | Pickup |
+| Choose the island and dock you are leaving from. | Select your departure island and dock. |
+| Leaving from | Island |
+| Departure dock | Dock |
+| Choose your landing | Destination |
+| We will put you down at the dock that makes sense. | Select your arrival island and dock. |
+| Going to | Island |
+| Arrival dock | Dock |
+| Make it yours | Review your trip |
+| One last look before we call a captain. | Confirm the details before booking. |
+| **Call my boat** (button) | Request boat |
+| Need Response mode? | Need emergency help? |
+| STEP 1 OF 3 | Step 1 of 3 *(sentence case)* |
+| Seven fictional islands · local docks only | *(delete)* |
+| Route plotted across the island chain | *(delete)* |
+
+### Trip page (`/trip/:id`)
+| Current | New |
+|---|---|
+| Your boat is on the way. | Your boat is on the way |
+| 46 minutes until we reach you. | Arriving in 46 min |
+| Passage details | Trip details |
+| From: `coral-cove` | From: **Coral Cove** — map IDs to display names |
+| To: `mango-harbor` | To: **Mango Harbor** |
+| Fare | Fare *(keep — and round to 2dp cleanly)* |
+| **Mark crossing complete** (button) | Complete trip |
+| 26.4 km crossing | 26.4 km |
+| Captain Noah Toussaint · 4.9 rating | Noah Toussaint · ★ 4.9 |
+
+### Fleet page (`/fleet`)
+| Current | New |
+|---|---|
+| The live fleet. | Available boats |
+| Every boat here is canonical. If you can see it, it is on the water with us today. | All boats currently in service. |
+| TOTAL BOATS / READY NOW / RESCUE READY | Total / Available / Rescue |
+| 72 vessels in view | 72 boats |
+| Up To 4 Passengers | Up to 4 passengers *(fix the title-casing)* |
+| View boat details ⌄ | Details |
+| 2 years on the water | 2 years experience |
+
+### Emergency page (`/emergency`)
+| Current | New |
+|---|---|
+| Keep calm. We know this water. | Emergency assistance |
+| Response mode is for immediate help on or near the water. Tell us what is happening, then stay where you are if it is safe. | Tell us what's happening. A rescue boat will be dispatched to your location. |
+| Our dispatch team receives your location and sends the nearest rescue-equipped boat. | Your location is sent to dispatch immediately. |
+| What is happening? | What's the emergency? |
+| Pick the closest description. | Select the closest match. |
+| Stranded or adrift | Stranded or adrift *(keep)* |
+| Taking on water | Taking on water *(keep)* |
+| Notes for the captain | Additional details (optional) |
+| What should the crew know? | Describe the situation |
+| **Review dispatch** (button) | Continue |
+| Ready to send for help? | Confirm emergency request |
+| We will send the nearest rescue-equipped boat to your location. Keep your phone visible and stay on channel. | The nearest rescue boat will be dispatched. Keep your phone on and stay where you are if it's safe. |
+| **Send for help** (button) | Request help now |
+| Dispatch could not be reached. Try again. | *(replace with the real API error — see §7)* |
+| **Need help on the water** (floating button) | Emergency |
+
+### Auth, profile, errors, footer
+| Current | New |
+|---|---|
+| Welcome aboard / Your next crossing starts here. | Sign in / Sign in to book a ride and view your trips. |
+| Your logbook is waiting. | Your trips |
+| Sign in to keep your crossings, captains, and favourite docks in one place. | Sign in to view your trip history. |
+| That dock isn't here. | Page not found |
+| This page drifted beyond our map. Head back to a known island or open Response mode if you need a real hand. | The page you're looking for doesn't exist. |
+| **Back to the bay** (button) | Go home |
+| A small squall. | Something went wrong |
+| We could not find that crossing. | Trip not found. |
+| Local captains. Clear fares. A better way across the islands. | Boat transportation and emergency response across the islands. |
+| Daily, first light to last launch | Daily, 6:00 AM – 10:00 PM |
+| VHF channel 16 | VHF Channel 16 *(keep — this one is legitimately correct maritime usage)* |
+| Response mode *(footer link)* | Emergency |
+
+---
+
+## 5. Visual system — match a real transportation app
+
+**Color.** Cut the palette down hard. The cream/sand/teal/coral mix currently reads decorative.
+- Background: white `#FFFFFF`; secondary surfaces `#F6F6F6`
+- Text: primary `#000000`, secondary `#6B6B6B`, tertiary `#9A9A9A`
+- Borders: `#E5E5E5`
+- Primary action: **black `#000000` with white text** (this single change does more than anything else to make it look like Uber)
+- Emergency accent: `#D93025` — used only on the emergency screen and the emergency button
+- Optional brand accent: keep one teal `#0E7C7B` for links and the logo mark **only** — not for buttons, not for backgrounds
+- Delete the cream `#F5E6C8` page backgrounds and the large teal section blocks entirely
+
+**Buttons.** 48px tall, 8px radius (not fully-rounded pills — the current pill shape reads playful), 600 weight, 16px. Primary = black fill. Secondary = white fill with a `#E5E5E5` border. Destructive/emergency = `#D93025` fill.
+
+**Cards.** White, 12px radius, `1px solid #E5E5E5`, no drop shadows (or a single very subtle one). Remove the decorative pastel circles currently sitting in the corners of the island cards.
+
+**Layout.**
+- Max content width 1120px, centered, 24px side padding.
+- **Fix the dead space.** The `/emergency` and `/book` pages currently leave roughly the bottom half of a desktop screen empty. Vertically center the card in the available viewport, or introduce a two-column layout (map left, form right) that fills the space.
+- Section spacing: 64px desktop / 40px mobile. Consistent 8px spacing scale throughout (8/16/24/32/48/64).
+- **Replace the decorative island illustrations** on `/book` and `/fleet` with a clean, functional map: flat shapes, thin `#E5E5E5` grid, black dots for docks, a black line for the route. Remove the tan blob boats — a small directional triangle or boat glyph, sized proportionally to the islands, not the current oversized teal ellipse that covers half the departure island.
+- **Differentiate boat classes visually** on `/fleet` — all 72 cards currently show an identical tan ellipse whether it's a rescue boat, a catamaran, or a speedboat.
+
+**Status chips.** Small, 12px, 500 weight, sentence case, subtle background: Available (green), En route (amber), On trip (blue), Offline (gray). No uppercase, no letter-spacing.
+
+---
+
+## 6. Voice rules for any new copy
+
+Write like product UI, not like a novel:
+- **Say what the thing does.** "Book a ride", not "Plan a crossing."
+- **Second person, present tense, active voice.** "Choose your destination."
+- **No metaphors.** Nothing about tides, wakes, shoals, squalls, channels, or the horizon.
+- **No two-sentence poetic fragments.** "Not an app. A local hand." is exactly the pattern to eliminate.
+- **No self-congratulation.** Don't tell the user the service is warm, local, or better — show the fare and the ETA.
+- **Never call the islands "fictional"** in the UI. It breaks the product illusion instantly for a judge.
+- **Numbers over adjectives.** "54 boats available" beats "boats ready to launch."
+- Sentence case for every heading, label, and button.
+
+---
+
+## 7. Fix these real defects while you're in the files
+
+Verified issues on the live site — fix them as part of this pass:
+
+1. **Show real API errors.** The client renders "Dispatch could not be reached. Try again." and "We could not reach the dock. Please try again." for responses that *did* arrive. The API returns useful messages (`"No rescue boat is currently available."`, `"No boats are available in that class right now."`) — render `response.error` and reserve a generic message for actual network exceptions.
+2. **Map slugs to names.** The trip page prints `coral-cove` / `mango-harbor` instead of "Coral Cove" / "Mango Harbor".
+3. **Fix the header link.** "Book a crossing" → `/book`.
+4. **Never block a submit silently.** Selecting the same island for pickup and destination lets you proceed to a Continue button that does nothing with no message. Filter the departure island out of the destination list, and always render a reason when a submit is blocked.
+5. **Remove `maximum-scale=1`** from the viewport meta tag — it blocks pinch-zoom (WCAG 2.1 AA failure).
+6. **Tap targets.** "Use my location" and "Cancel" on the emergency screen are 16px tall; nav links are 36px. Minimum 44px for every interactive element.
+
+---
+
+## 8. Do not change
+
+- The landing page title **"Adaptive Maritime Dispatch"**
+- The brand name **WhaleCall** and the whale logo mark
+- The dark, red-accented visual treatment of the emergency screen (language changes, styling stays)
+- Island and dock names (Coral Cove, Mango Harbor, Cove Landing, etc.) — these read as real places
+- Captain names, ratings, and boat names (Tide Taxi 01, Sea Guard 18) — these are fine
+- Any backend logic, routes, or API contracts beyond the error-surfacing fix in §7
+
+---
+
+## 9. Verification
+
+When finished, confirm:
+- [ ] `grep -ri "voyage mode\|response mode\|crossing\|waterline\|logbook\|squall\|coastwatch"` returns **zero** results in user-facing strings
+- [ ] No `text-transform: uppercase` outside of status chips (and those are converted to sentence case anyway)
+- [ ] No `letter-spacing` greater than `0` anywhere
+- [ ] Only one font family is loaded
+- [ ] Every primary button is black with white text, 48px tall, 8px radius
+- [ ] The word "fictional" appears nowhere in the UI
+- [ ] `/emergency` and `/book` have no large empty region below the fold at 1440×900
+- [ ] Every heading and button is sentence case
+- [ ] The landing page still reads "Adaptive Maritime Dispatch"

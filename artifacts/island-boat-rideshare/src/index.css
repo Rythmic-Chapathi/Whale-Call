@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -559,6 +559,13 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   background-size: 34px 34px;
 }
 .caribbean-map { min-height: 440px !important; }
+.caribbean-map .leaflet-container {
+  background-color: hsl(187 48% 78%);
+  background-image:
+    linear-gradient(hsl(187 43% 62% / .2) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(187 43% 62% / .2) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
 @media (min-width: 640px) { .caribbean-map { min-height: 560px !important; } }
 @media (min-width: 1024px) { .caribbean-map { min-height: 640px !important; } }
 .response-mode .map-grid { background-color: hsl(210 18% 11%); background-image: linear-gradient(hsl(207 20% 20% / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(207 20% 20% / .45) 1px, transparent 1px); }
@@ -571,6 +578,60 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .port-marker span { display: block; width: 5px; height: 5px; margin: 4.5px; border-radius: 999px; background: #f4c95d; }
 .boat-map-marker { cursor: pointer; filter: drop-shadow(0 3px 5px rgb(9 39 47 / .25)); transition: transform .2s ease; }
 .boat-map-marker:hover { transform: scale(1.12); }
+.island-shape-icon,
+.island-label-icon { background: transparent; border: 0; }
+.island-shape-button {
+  display: grid;
+  width: 42px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.island-shape-button span {
+  display: block;
+  width: 34px;
+  height: 22px;
+  border: 1px solid rgb(23 57 67 / .28);
+  border-radius: 58% 42% 48% 52% / 46% 56% 44% 54%;
+  background: rgb(243 250 247 / .9);
+  box-shadow: 0 2px 7px rgb(9 39 47 / .2);
+  clip-path: polygon(8% 30%, 28% 9%, 52% 17%, 77% 10%, 94% 39%, 81% 69%, 56% 81%, 34% 94%, 12% 72%);
+}
+.island-shape-selected span { border-color: #000; background: rgb(255 255 255 / .98); }
+.island-label-button {
+  display: inline-flex;
+  min-height: 20px;
+  width: 112px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 1px 3px;
+  color: #6B6B6B;
+  font-family: Inter, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .18s ease, transform .18s ease;
+}
+.island-label-button:hover {
+  color: #000;
+  transform: translateY(-1px);
+}
+.island-label-selected { color: #000; }
+.island-shape-button:focus-visible,
+.island-label-button:focus-visible {
+  outline: 2px solid #f4c95d;
+  outline-offset: 2px;
+}
+@media (max-width: 639px) {
+  .island-label-button { font-size: 8px; }
+}
 .boat-marker-shell { position: relative; display: block; width: 50px; height: 50px; border: 2px solid var(--boat-marker-color); border-radius: 999px; background: rgb(255 255 255 / .94); }
 .boat-marker-shell img { display: block; width: 100%; height: 100%; padding: 7px; object-fit: contain; }
 .boat-marker-status { position: absolute; right: 1px; top: 1px; width: 9px; height: 9px; border: 2px solid white; border-radius: 999px; background: var(--boat-marker-color); }
