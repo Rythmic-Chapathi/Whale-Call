@@ -22,3 +22,4 @@ export * from "./drivers";
 export * from "./emergencies";
 export * from "./islands";
 export * from "./trips";
+export * from "./supplies";

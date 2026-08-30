@@ -14,12 +14,9 @@ type CaribbeanMapProps = {
   className?: string;
 };
 
-function boatMarkerSvg(color: string, heading: number) {
-  return `<svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true" style="transform:rotate(${heading}deg)">
-    <circle cx="21" cy="21" r="19" fill="white" stroke="${color}" stroke-width="2"/>
-    <path d="M21 8l8 22-8 4-8-4 8-22z" fill="${color}"/>
-    <path d="M17 23h8M18.5 27h5" stroke="white" stroke-width="2" stroke-linecap="round"/>
-  </svg>`;
+function boatMarkerPng(color: string, heading: number) {
+  const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/boat.png`;
+  return `<span class="boat-marker-frame" style="--boat-status:${color};--boat-heading:${heading}deg"><img src="${src}" alt="" /></span>`;
 }
 
 export function CaribbeanMap({
@@ -71,9 +68,9 @@ export function CaribbeanMap({
       const color = emergency ? '#FF3B30' : boat.status === 'available' ? '#14919B' : '#5A6B74';
       const icon = L.divIcon({
         className: 'boat-map-marker',
-        html: boatMarkerSvg(color, boat.heading),
-        iconSize: [42, 42],
-        iconAnchor: [21, 21],
+        html: boatMarkerPng(color, boat.heading),
+        iconSize: [58, 42],
+        iconAnchor: [29, 21],
       });
       L.marker([boat.position.lat, boat.position.lng], { icon, title: `${boat.name} · ${boat.status.replace('_', ' ')}` }).addTo(markerGroup);
     }
@@ -111,7 +108,7 @@ export function CaribbeanMap({
       <div ref={containerRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
         <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
-        <p className="mt-1 text-xs font-semibold">OpenStreetMap · live ports · SVG fleet markers</p>
+        <p className="mt-1 text-xs font-semibold">OpenStreetMap · live ports · PNG fleet markers</p>
       </div>
     </div>
   );

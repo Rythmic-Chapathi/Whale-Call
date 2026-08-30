@@ -16,6 +16,8 @@ tags:
     description: Standard boat ride requests and tracking
   - name: emergencies
     description: Emergency rescue dispatch
+  - name: supplies
+    description: Essential supply ordering and delivery
 paths:
   /healthz:
     get:
@@ -203,6 +205,186 @@ paths:
                 $ref: "#/components/schemas/EmergencyIncident"
         "404":
           description: Emergency not found
+  /supplies/catalog:
+    get:
+      operationId: listSupplyCatalog
+      tags: [supplies]
+      summary: List supply items and live availability
+      responses:
+        "200":
+          description: Supply catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplyCatalogItem"
+  /supplies/depots:
+    get:
+      operationId: listSupplyDepots
+      tags: [supplies]
+      summary: List supply depots and live stock
+      responses:
+        "200":
+          description: Supply depots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplyDepot"
+  /supplies/availability:
+    get:
+      operationId: getSupplyAvailability
+      tags: [supplies]
+      summary: Check nearby stock for one supply line
+      parameters:
+        - name: itemId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: quantity
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Nearby availability
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplyAvailability"
+  /supplies/orders:
+    post:
+      operationId: createSupplyOrder
+      tags: [supplies]
+      summary: Source supplies and allocate a delivery boat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplyOrderInput"
+      responses:
+        "201":
+          description: Supply order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplyOrder"
+        "400":
+          description: Invalid order
+        "409":
+          description: Stock or boat capacity conflict
+  /supplies/orders/{supplyOrderId}:
+    get:
+      operationId: getSupplyOrder
+      tags: [supplies]
+      summary: Get one live supply run
+      parameters:
+        - $ref: "#/components/parameters/SupplyOrderId"
+      responses:
+        "200":
+          description: Supply order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplyOrder"
+        "404":
+          description: Supply order not found
+  /supplies/orders/{supplyOrderId}/cancel:
+    post:
+      operationId: cancelSupplyOrder
+      tags: [supplies]
+      summary: Cancel a pending supply run and release reservations
+      parameters:
+        - $ref: "#/components/parameters/SupplyOrderId"
+      responses:
+        "200":
+          description: Cancelled supply order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplyOrder"
+  /supplies/orders/{supplyOrderId}/age:
+    post:
+      operationId: ageSupplyOrder
+      tags: [supplies]
+      summary: Age a supply run by five minutes in development
+      parameters:
+        - $ref: "#/components/parameters/SupplyOrderId"
+      responses:
+        "200":
+          description: Aged supply order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplyOrder"
+  /supplies/queue:
+    get:
+      operationId: getSupplyQueue
+      tags: [supplies]
+      summary: List active supply runs sorted by live priority
+      responses:
+        "200":
+          description: Live dispatch queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupplyOrder"
+  /emergencies/{emergencyId}/supplies:
+    patch:
+      operationId: attachEmergencySupplies
+      tags: [supplies, emergencies]
+      summary: Attach a supply order to an emergency dispatch
+      parameters:
+        - $ref: "#/components/parameters/EmergencyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencySupplyInput"
+      responses:
+        "201":
+          description: Emergency supply order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplyOrder"
+  /dev/reset:
+    post:
+      operationId: resetDemo
+      tags: [supplies]
+      summary: Reset demo fleet, inventory, and orders outside production
+      responses:
+        "200":
+          description: Demo reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                required: [status]
 components:
   parameters:
     BoatId:
@@ -219,6 +401,12 @@ components:
         type: string
     EmergencyId:
       name: emergencyId
+      in: path
+      required: true
+      schema:
+        type: string
+    SupplyOrderId:
+      name: supplyOrderId
       in: path
       required: true
       schema:
@@ -327,7 +515,11 @@ components:
           type: string
         emergencyEquipped:
           type: boolean
-      required: [id, name, boatClass, capacity, position, heading, status, assignedDriver, homeIslandId, emergencyEquipped]
+        payloadKg:
+          type: number
+        refrigerated:
+          type: boolean
+      required: [id, name, boatClass, capacity, position, heading, status, assignedDriver, homeIslandId, emergencyEquipped, payloadKg, refrigerated]
     FleetSummary:
       type: object
       properties:
@@ -437,4 +629,185 @@ components:
         tripId:
           type: ["string", "null"]
       required: [id, status, situation, position, notes, rescueBoat, etaMinutes, distanceKm, createdAt, tripId]
+    SupplyCategory:
+      type: string
+      enum: [medical, water, food, power, shelter, comms]
+    SupplyItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          $ref: "#/components/schemas/SupplyCategory"
+        unit:
+          type: string
+        weightKg:
+          type: number
+        coldChain:
+          type: boolean
+        criticality:
+          type: integer
+          minimum: 1
+          maximum: 3
+        maxPerOrder:
+          type: integer
+      required: [id, name, category, unit, weightKg, coldChain, criticality, maxPerOrder]
+    SupplyCatalogItem:
+      allOf:
+        - $ref: "#/components/schemas/SupplyItem"
+        - type: object
+          properties:
+            availableTotal:
+              type: integer
+          required: [availableTotal]
+    SupplyDepot:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        islandId:
+          type: string
+        dockId:
+          type: string
+        position:
+          $ref: "#/components/schemas/Coordinate"
+        hours:
+          type: string
+        available:
+          type: object
+          additionalProperties:
+            type: integer
+      required: [id, name, islandId, dockId, position, hours, available]
+    SupplyAvailability:
+      type: object
+      properties:
+        depotId:
+          type: string
+        depotName:
+          type: string
+        available:
+          type: integer
+        distanceKm:
+          type: number
+        etaMinutes:
+          type: integer
+      required: [depotId, depotName, available, distanceKm, etaMinutes]
+    SupplyOrderLineInput:
+      type: object
+      properties:
+        itemId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+      required: [itemId, quantity]
+    SupplyOrderLine:
+      type: object
+      properties:
+        itemId:
+          type: string
+        quantity:
+          type: integer
+        depotId:
+          type: string
+      required: [itemId, quantity, depotId]
+    SupplyOrderInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/SupplyOrderLineInput"
+        destinationIslandId:
+          type: ["string", "null"]
+        destinationDockId:
+          type: ["string", "null"]
+        destinationPosition:
+          $ref: "#/components/schemas/Coordinate"
+        urgency:
+          type: string
+          enum: [routine, urgent, critical]
+        accessibilityNeed:
+          type: boolean
+        requesterNote:
+          type: string
+        linkedEmergencyId:
+          type: ["string", "null"]
+      required: [lines, destinationPosition, urgency, accessibilityNeed, requesterNote]
+    EmergencySupplyInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/SupplyOrderLineInput"
+      required: [lines]
+    SupplyOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        deliveredAt:
+          type: ["string", "null"]
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplyOrderLine"
+        requestedLines:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplyOrderLineInput"
+        destinationIslandId:
+          type: ["string", "null"]
+        destinationDockId:
+          type: ["string", "null"]
+        destinationPosition:
+          $ref: "#/components/schemas/Coordinate"
+        requesterNote:
+          type: string
+        urgency:
+          type: string
+          enum: [routine, urgent, critical]
+        accessibilityNeed:
+          type: boolean
+        linkedEmergencyId:
+          type: ["string", "null"]
+        priorityScore:
+          type: number
+        priorityReason:
+          type: string
+        status:
+          type: string
+          enum: [sourcing, allocated, loading, in_transit, delivered, partially_filled, cancelled]
+        boatId:
+          type: ["string", "null"]
+        boat:
+          oneOf:
+            - $ref: "#/components/schemas/FleetBoat"
+            - type: "null"
+        totalWeightKg:
+          type: number
+        etaMinutes:
+          type: ["integer", "null"]
+        distanceKm:
+          type: number
+        fare:
+          type: number
+        unfilledLines:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplyOrderLineInput"
+        allocationNote:
+          type: ["string", "null"]
+      required: [id, createdAt, deliveredAt, lines, requestedLines, destinationIslandId, destinationDockId, destinationPosition, requesterNote, urgency, accessibilityNeed, linkedEmergencyId, priorityScore, priorityReason, status, boatId, boat, totalWeightKg, etaMinutes, distanceKm, fare, unfilledLines, allocationNote]
 

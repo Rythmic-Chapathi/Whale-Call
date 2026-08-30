@@ -21,4 +21,6 @@ export interface FleetBoat {
   assignedDriver: Driver;
   homeIslandId: string;
   emergencyEquipped: boolean;
+  payloadKg: number;
+  refrigerated: boolean;
 }

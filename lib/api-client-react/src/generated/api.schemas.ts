@@ -82,6 +82,8 @@ export interface FleetBoat {
   assignedDriver: Driver;
   homeIslandId: string;
   emergencyEquipped: boolean;
+  payloadKg: number;
+  refrigerated: boolean;
 }
 
 export interface FleetSummary {
@@ -186,9 +188,170 @@ export interface EmergencyIncident {
   tripId: string | null;
 }
 
+export type SupplyCategory = typeof SupplyCategory[keyof typeof SupplyCategory];
+
+
+export const SupplyCategory = {
+  medical: 'medical',
+  water: 'water',
+  food: 'food',
+  power: 'power',
+  shelter: 'shelter',
+  comms: 'comms',
+} as const;
+
+export interface SupplyItem {
+  id: string;
+  name: string;
+  category: SupplyCategory;
+  unit: string;
+  weightKg: number;
+  coldChain: boolean;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  criticality: number;
+  maxPerOrder: number;
+}
+
+export type SupplyCatalogItem = SupplyItem & {
+  availableTotal: number;
+};
+
+export type SupplyDepotAvailable = {[key: string]: number};
+
+export interface SupplyDepot {
+  id: string;
+  name: string;
+  islandId: string;
+  dockId: string;
+  position: Coordinate;
+  hours: string;
+  available: SupplyDepotAvailable;
+}
+
+export interface SupplyAvailability {
+  depotId: string;
+  depotName: string;
+  available: number;
+  distanceKm: number;
+  etaMinutes: number;
+}
+
+export interface SupplyOrderLineInput {
+  itemId: string;
+  /** @minimum 1 */
+  quantity: number;
+}
+
+export interface SupplyOrderLine {
+  itemId: string;
+  quantity: number;
+  depotId: string;
+}
+
+export type SupplyOrderInputUrgency = typeof SupplyOrderInputUrgency[keyof typeof SupplyOrderInputUrgency];
+
+
+export const SupplyOrderInputUrgency = {
+  routine: 'routine',
+  urgent: 'urgent',
+  critical: 'critical',
+} as const;
+
+export interface SupplyOrderInput {
+  /** @minItems 1 */
+  lines: SupplyOrderLineInput[];
+  /** @nullable */
+  destinationIslandId?: string | null;
+  /** @nullable */
+  destinationDockId?: string | null;
+  destinationPosition: Coordinate;
+  urgency: SupplyOrderInputUrgency;
+  accessibilityNeed: boolean;
+  requesterNote: string;
+  /** @nullable */
+  linkedEmergencyId?: string | null;
+}
+
+export interface EmergencySupplyInput {
+  /** @minItems 1 */
+  lines: SupplyOrderLineInput[];
+}
+
+export type SupplyOrderUrgency = typeof SupplyOrderUrgency[keyof typeof SupplyOrderUrgency];
+
+
+export const SupplyOrderUrgency = {
+  routine: 'routine',
+  urgent: 'urgent',
+  critical: 'critical',
+} as const;
+
+export type SupplyOrderStatus = typeof SupplyOrderStatus[keyof typeof SupplyOrderStatus];
+
+
+export const SupplyOrderStatus = {
+  sourcing: 'sourcing',
+  allocated: 'allocated',
+  loading: 'loading',
+  in_transit: 'in_transit',
+  delivered: 'delivered',
+  partially_filled: 'partially_filled',
+  cancelled: 'cancelled',
+} as const;
+
+export interface SupplyOrder {
+  id: string;
+  createdAt: string;
+  /** @nullable */
+  deliveredAt: string | null;
+  lines: SupplyOrderLine[];
+  requestedLines: SupplyOrderLineInput[];
+  /** @nullable */
+  destinationIslandId: string | null;
+  /** @nullable */
+  destinationDockId: string | null;
+  destinationPosition: Coordinate;
+  requesterNote: string;
+  urgency: SupplyOrderUrgency;
+  accessibilityNeed: boolean;
+  /** @nullable */
+  linkedEmergencyId: string | null;
+  priorityScore: number;
+  priorityReason: string;
+  status: SupplyOrderStatus;
+  /** @nullable */
+  boatId: string | null;
+  boat: FleetBoat | null;
+  totalWeightKg: number;
+  /** @nullable */
+  etaMinutes: number | null;
+  distanceKm: number;
+  fare: number;
+  unfilledLines: SupplyOrderLineInput[];
+  /** @nullable */
+  allocationNote: string | null;
+}
+
 export type ListFleetParams = {
 boatClass?: BoatClass;
 status?: BoatStatus;
 emergencyEquipped?: boolean;
+};
+
+export type GetSupplyAvailabilityParams = {
+itemId: string;
+/**
+ * @minimum 1
+ */
+quantity: number;
+lat: number;
+lng: number;
+};
+
+export type ResetDemo200 = {
+  status: string;
 };
 

@@ -66,6 +66,10 @@ router.post("/trips", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Choose two valid islands." });
     return;
   }
+  if (pickupIsland.id === destinationIsland.id) {
+    res.status(400).json({ error: "Departure and destination must be different islands." });
+    return;
+  }
 
   const pickupDock = pickupIsland.docks.find(
     (dock: Dock) => dock.id === parsed.data.pickupDockId,

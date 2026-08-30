@@ -200,7 +200,20 @@ export async function seedFleet(): Promise<void> {
   }
 
   const [{ value }] = await db.select({ value: count() }).from(boatsTable);
-  if (Number(value) > 0) return;
+  if (Number(value) > 0) {
+    const rescueBoats = await db
+      .select()
+      .from(boatsTable)
+      .where(eq(boatsTable.emergencyEquipped, true))
+      .orderBy(asc(boatsTable.id));
+    if (rescueBoats.length > 0 && !rescueBoats.some((boat) => boat.status === "available")) {
+      await db
+        .update(boatsTable)
+        .set({ status: "available" })
+        .where(eq(boatsTable.id, rescueBoats[0].id));
+    }
+    return;
+  }
 
   const drivers = Array.from({ length: 72 }, (_, index) => {
     const name = DRIVER_NAMES[index % DRIVER_NAMES.length];
@@ -232,10 +245,21 @@ export async function seedFleet(): Promise<void> {
       lat: island.center.lat + offset,
       lng: island.center.lng + ((index % 5) - 2) * 0.005,
       heading: (index * 47) % 360,
-      status: index % 17 === 0 ? "en_route" : index % 23 === 0 ? "offline" : "available",
+      status: rescue ? "available" : index % 17 === 0 ? "en_route" : index % 23 === 0 ? "offline" : "available",
       driverId: `driver-${index + 1}`,
       homeIslandId: island.id,
       emergencyEquipped: rescue,
+      payloadKg:
+        config.boatClass === "catamaran"
+          ? 1800
+          : config.boatClass === "rescue"
+            ? 1200
+            : config.boatClass === "cruiser"
+              ? 900
+              : config.boatClass === "water_taxi"
+                ? 450
+                : 250,
+      refrigerated: config.boatClass === "rescue" || config.boatClass === "cruiser" && index % 2 === 0,
     };
   });
   await db.insert(boatsTable).values(boats);
@@ -266,6 +290,8 @@ export function toApiBoat(boat: Boat, driver: Driver): FleetBoat {
     assignedDriver: toApiDriver(driver),
     homeIslandId: boat.homeIslandId,
     emergencyEquipped: boat.emergencyEquipped,
+    payloadKg: boat.payloadKg,
+    refrigerated: boat.refrigerated,
   };
 }
 
@@ -341,8 +367,15 @@ export function haversineKm(a: Coordinate, b: Coordinate): number {
 }
 
 export async function findNearestRescueBoat(position: Coordinate): Promise<FleetBoat | undefined> {
-  const boats = await listApiBoats({ emergencyEquipped: true, status: "available" });
-  return boats.sort(
+  const rescueBoats = (await listApiBoats({ emergencyEquipped: true }))
+    .filter((boat) => boat.status === "available" || boat.status === "en_route")
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === "available" ? -1 : 1;
+      return haversineKm(position, a.position) - haversineKm(position, b.position);
+    });
+  if (rescueBoats[0]) return rescueBoats[0];
+  const availableBoats = await listApiBoats({ status: "available" });
+  return availableBoats.sort(
     (a, b) => haversineKm(position, a.position) - haversineKm(position, b.position),
   )[0];
 }

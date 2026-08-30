@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedFleet } from "./lib/fleet";
+import { seedSupplies, startSupplyTicker } from "./lib/supplies";
 
 const rawPort = process.env["PORT"];
 
@@ -17,7 +18,9 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 seedFleet()
+  .then(() => seedSupplies())
   .then(() => {
+    startSupplyTicker();
     app.listen(port, (err) => {
       if (err) {
         logger.error({ err }, "Error listening on port");

@@ -76,7 +76,9 @@ export const ListFleetResponseItem = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 })
 export const ListFleetResponse = zod.array(ListFleetResponseItem)
 
@@ -122,7 +124,9 @@ export const GetFleetBoatResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 })
 
 
@@ -173,7 +177,9 @@ export const CreateTripResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "price": zod.number(),
   "etaMinutes": zod.int(),
@@ -221,7 +227,9 @@ export const GetTripResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "price": zod.number(),
   "etaMinutes": zod.int(),
@@ -269,7 +277,9 @@ export const CompleteTripResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "price": zod.number(),
   "etaMinutes": zod.int(),
@@ -323,7 +333,9 @@ export const CreateEmergencyResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "etaMinutes": zod.int(),
   "distanceKm": zod.number(),
@@ -370,7 +382,9 @@ export const GetEmergencyResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "etaMinutes": zod.int(),
   "distanceKm": zod.number(),
@@ -417,12 +431,566 @@ export const ResolveEmergencyResponse = zod.object({
   "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
 }),
   "homeIslandId": zod.string(),
-  "emergencyEquipped": zod.boolean()
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
 }),
   "etaMinutes": zod.int(),
   "distanceKm": zod.number(),
   "createdAt": zod.coerce.date(),
   "tripId": zod.string().nullable()
+})
+
+
+/**
+ * @summary List supply items and live availability
+ */
+export const listSupplyCatalogResponseOneCriticalityMax = 3;
+
+
+
+export const ListSupplyCatalogResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.enum(['medical', 'water', 'food', 'power', 'shelter', 'comms']),
+  "unit": zod.string(),
+  "weightKg": zod.number(),
+  "coldChain": zod.boolean(),
+  "criticality": zod.int().min(1).max(listSupplyCatalogResponseOneCriticalityMax),
+  "maxPerOrder": zod.int()
+}).and(zod.object({
+  "availableTotal": zod.int()
+}))
+export const ListSupplyCatalogResponse = zod.array(ListSupplyCatalogResponseItem)
+
+
+/**
+ * @summary List supply depots and live stock
+ */
+export const ListSupplyDepotsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "islandId": zod.string(),
+  "dockId": zod.string(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "hours": zod.string(),
+  "available": zod.record(zod.string(), zod.int())
+})
+export const ListSupplyDepotsResponse = zod.array(ListSupplyDepotsResponseItem)
+
+
+/**
+ * @summary Check nearby stock for one supply line
+ */
+
+
+
+export const GetSupplyAvailabilityQueryParams = zod.object({
+  "itemId": zod.coerce.string(),
+  "quantity": zod.coerce.number().int().min(1),
+  "lat": zod.coerce.number(),
+  "lng": zod.coerce.number()
+})
+
+export const GetSupplyAvailabilityResponseItem = zod.object({
+  "depotId": zod.string(),
+  "depotName": zod.string(),
+  "available": zod.int(),
+  "distanceKm": zod.number(),
+  "etaMinutes": zod.int()
+})
+export const GetSupplyAvailabilityResponse = zod.array(GetSupplyAvailabilityResponseItem)
+
+
+/**
+ * @summary Source supplies and allocate a delivery boat
+ */
+
+
+
+
+export const CreateSupplyOrderBody = zod.object({
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})).min(1),
+  "destinationIslandId": zod.string().nullish(),
+  "destinationDockId": zod.string().nullish(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "requesterNote": zod.string(),
+  "linkedEmergencyId": zod.string().nullish()
+})
+
+
+
+
+
+export const CreateSupplyOrderResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+
+
+/**
+ * @summary Get one live supply run
+ */
+export const GetSupplyOrderParams = zod.object({
+  "supplyOrderId": zod.coerce.string()
+})
+
+
+
+
+
+export const GetSupplyOrderResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+
+
+/**
+ * @summary Cancel a pending supply run and release reservations
+ */
+export const CancelSupplyOrderParams = zod.object({
+  "supplyOrderId": zod.coerce.string()
+})
+
+
+
+
+
+export const CancelSupplyOrderResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+
+
+/**
+ * @summary Age a supply run by five minutes in development
+ */
+export const AgeSupplyOrderParams = zod.object({
+  "supplyOrderId": zod.coerce.string()
+})
+
+
+
+
+
+export const AgeSupplyOrderResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+
+
+/**
+ * @summary List active supply runs sorted by live priority
+ */
+
+
+
+
+export const GetSupplyQueueResponseItem = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+export const GetSupplyQueueResponse = zod.array(GetSupplyQueueResponseItem)
+
+
+/**
+ * @summary Attach a supply order to an emergency dispatch
+ */
+export const AttachEmergencySuppliesParams = zod.object({
+  "emergencyId": zod.coerce.string()
+})
+
+
+
+
+
+export const AttachEmergencySuppliesBody = zod.object({
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})).min(1)
+})
+
+
+
+
+
+export const AttachEmergencySuppliesResponse = zod.object({
+  "id": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "deliveredAt": zod.coerce.date().nullable(),
+  "lines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int(),
+  "depotId": zod.string()
+})),
+  "requestedLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "destinationIslandId": zod.string().nullable(),
+  "destinationDockId": zod.string().nullable(),
+  "destinationPosition": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "requesterNote": zod.string(),
+  "urgency": zod.enum(['routine', 'urgent', 'critical']),
+  "accessibilityNeed": zod.boolean(),
+  "linkedEmergencyId": zod.string().nullable(),
+  "priorityScore": zod.number(),
+  "priorityReason": zod.string(),
+  "status": zod.enum(['sourcing', 'allocated', 'loading', 'in_transit', 'delivered', 'partially_filled', 'cancelled']),
+  "boatId": zod.string().nullable(),
+  "boat": zod.union([zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),zod.null()]),
+  "totalWeightKg": zod.number(),
+  "etaMinutes": zod.int().nullable(),
+  "distanceKm": zod.number(),
+  "fare": zod.number(),
+  "unfilledLines": zod.array(zod.object({
+  "itemId": zod.string(),
+  "quantity": zod.int().min(1)
+})),
+  "allocationNote": zod.string().nullable()
+})
+
+
+/**
+ * @summary Reset demo fleet, inventory, and orders outside production
+ */
+export const ResetDemoResponse = zod.object({
+  "status": zod.string()
 })
 
 

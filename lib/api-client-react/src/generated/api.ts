@@ -22,11 +22,19 @@ import type {
 import type {
   EmergencyIncident,
   EmergencyInput,
+  EmergencySupplyInput,
   FleetBoat,
   FleetSummary,
+  GetSupplyAvailabilityParams,
   HealthStatus,
   Island,
   ListFleetParams,
+  ResetDemo200,
+  SupplyAvailability,
+  SupplyCatalogItem,
+  SupplyDepot,
+  SupplyOrder,
+  SupplyOrderInput,
   Trip,
   TripInput
 } from './api.schemas';
@@ -887,5 +895,753 @@ export const useResolveEmergency = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getResolveEmergencyMutationOptions(options));
+    }
+
+export const getListSupplyCatalogUrl = () => {
+
+
+
+
+  return `/api/supplies/catalog`
+}
+
+/**
+ * @summary List supply items and live availability
+ */
+export const listSupplyCatalog = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupplyCatalogItem[]> => {
+
+  return customFetch<SupplyCatalogItem[]>(getListSupplyCatalogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSupplyCatalogQueryKey = () => {
+    return [
+    `/api/supplies/catalog`
+    ] as const;
+    }
+
+
+export const getListSupplyCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listSupplyCatalog>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupplyCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSupplyCatalogQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupplyCatalog>>> = ({ signal }) => listSupplyCatalog({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupplyCatalog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSupplyCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listSupplyCatalog>>>
+export type ListSupplyCatalogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List supply items and live availability
+ */
+
+export function useListSupplyCatalog<TData = Awaited<ReturnType<typeof listSupplyCatalog>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupplyCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSupplyCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSupplyDepotsUrl = () => {
+
+
+
+
+  return `/api/supplies/depots`
+}
+
+/**
+ * @summary List supply depots and live stock
+ */
+export const listSupplyDepots = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupplyDepot[]> => {
+
+  return customFetch<SupplyDepot[]>(getListSupplyDepotsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSupplyDepotsQueryKey = () => {
+    return [
+    `/api/supplies/depots`
+    ] as const;
+    }
+
+
+export const getListSupplyDepotsQueryOptions = <TData = Awaited<ReturnType<typeof listSupplyDepots>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupplyDepots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSupplyDepotsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupplyDepots>>> = ({ signal }) => listSupplyDepots({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupplyDepots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSupplyDepotsQueryResult = NonNullable<Awaited<ReturnType<typeof listSupplyDepots>>>
+export type ListSupplyDepotsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List supply depots and live stock
+ */
+
+export function useListSupplyDepots<TData = Awaited<ReturnType<typeof listSupplyDepots>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupplyDepots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSupplyDepotsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSupplyAvailabilityUrl = (params: GetSupplyAvailabilityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/supplies/availability?${stringifiedParams}` : `/api/supplies/availability`
+}
+
+/**
+ * @summary Check nearby stock for one supply line
+ */
+export const getSupplyAvailability = async (params: GetSupplyAvailabilityParams, options?: Parameters<typeof customFetch>[1]): Promise<SupplyAvailability[]> => {
+
+  return customFetch<SupplyAvailability[]>(getGetSupplyAvailabilityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupplyAvailabilityQueryKey = (params?: GetSupplyAvailabilityParams,) => {
+    return [
+    `/api/supplies/availability`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSupplyAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof getSupplyAvailability>>, TError = ErrorType<unknown>>(params: GetSupplyAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupplyAvailabilityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyAvailability>>> = ({ signal }) => getSupplyAvailability(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupplyAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof getSupplyAvailability>>>
+export type GetSupplyAvailabilityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check nearby stock for one supply line
+ */
+
+export function useGetSupplyAvailability<TData = Awaited<ReturnType<typeof getSupplyAvailability>>, TError = ErrorType<unknown>>(
+ params: GetSupplyAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupplyAvailabilityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSupplyOrderUrl = () => {
+
+
+
+
+  return `/api/supplies/orders`
+}
+
+/**
+ * @summary Source supplies and allocate a delivery boat
+ */
+export const createSupplyOrder = async (supplyOrderInput: SupplyOrderInput, options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder> => {
+
+  return customFetch<SupplyOrder>(getCreateSupplyOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(supplyOrderInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSupplyOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupplyOrder>>, TError,{data: BodyType<SupplyOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSupplyOrder>>, TError,{data: BodyType<SupplyOrderInput>}, TContext> => {
+
+const mutationKey = ['createSupplyOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSupplyOrder>>, {data: BodyType<SupplyOrderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSupplyOrder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSupplyOrderMutationResult = NonNullable<Awaited<ReturnType<typeof createSupplyOrder>>>
+    export type CreateSupplyOrderMutationBody = BodyType<SupplyOrderInput>
+    export type CreateSupplyOrderMutationError = ErrorType<void>
+
+    /**
+ * @summary Source supplies and allocate a delivery boat
+ */
+export const useCreateSupplyOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupplyOrder>>, TError,{data: BodyType<SupplyOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSupplyOrder>>,
+        TError,
+        {data: BodyType<SupplyOrderInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSupplyOrderMutationOptions(options));
+    }
+
+export const getGetSupplyOrderUrl = (supplyOrderId: string,) => {
+
+
+
+
+  return `/api/supplies/orders/${supplyOrderId}`
+}
+
+/**
+ * @summary Get one live supply run
+ */
+export const getSupplyOrder = async (supplyOrderId: string, options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder> => {
+
+  return customFetch<SupplyOrder>(getGetSupplyOrderUrl(supplyOrderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupplyOrderQueryKey = (supplyOrderId: string,) => {
+    return [
+    `/api/supplies/orders/${supplyOrderId}`
+    ] as const;
+    }
+
+
+export const getGetSupplyOrderQueryOptions = <TData = Awaited<ReturnType<typeof getSupplyOrder>>, TError = ErrorType<void>>(supplyOrderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupplyOrderQueryKey(supplyOrderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyOrder>>> = ({ signal }) => getSupplyOrder(supplyOrderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: supplyOrderId !== null && supplyOrderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyOrder>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupplyOrderQueryResult = NonNullable<Awaited<ReturnType<typeof getSupplyOrder>>>
+export type GetSupplyOrderQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one live supply run
+ */
+
+export function useGetSupplyOrder<TData = Awaited<ReturnType<typeof getSupplyOrder>>, TError = ErrorType<void>>(
+ supplyOrderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupplyOrderQueryOptions(supplyOrderId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCancelSupplyOrderUrl = (supplyOrderId: string,) => {
+
+
+
+
+  return `/api/supplies/orders/${supplyOrderId}/cancel`
+}
+
+/**
+ * @summary Cancel a pending supply run and release reservations
+ */
+export const cancelSupplyOrder = async (supplyOrderId: string, options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder> => {
+
+  return customFetch<SupplyOrder>(getCancelSupplyOrderUrl(supplyOrderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelSupplyOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelSupplyOrder>>, TError,{supplyOrderId: string}, TContext> => {
+
+const mutationKey = ['cancelSupplyOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelSupplyOrder>>, {supplyOrderId: string}> = (props) => {
+          const {supplyOrderId} = props ?? {};
+
+          return  cancelSupplyOrder(supplyOrderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelSupplyOrderMutationResult = NonNullable<Awaited<ReturnType<typeof cancelSupplyOrder>>>
+
+    export type CancelSupplyOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Cancel a pending supply run and release reservations
+ */
+export const useCancelSupplyOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelSupplyOrder>>,
+        TError,
+        {supplyOrderId: string},
+        TContext
+      > => {
+      return useMutation(getCancelSupplyOrderMutationOptions(options));
+    }
+
+export const getAgeSupplyOrderUrl = (supplyOrderId: string,) => {
+
+
+
+
+  return `/api/supplies/orders/${supplyOrderId}/age`
+}
+
+/**
+ * @summary Age a supply run by five minutes in development
+ */
+export const ageSupplyOrder = async (supplyOrderId: string, options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder> => {
+
+  return customFetch<SupplyOrder>(getAgeSupplyOrderUrl(supplyOrderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAgeSupplyOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ageSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ageSupplyOrder>>, TError,{supplyOrderId: string}, TContext> => {
+
+const mutationKey = ['ageSupplyOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ageSupplyOrder>>, {supplyOrderId: string}> = (props) => {
+          const {supplyOrderId} = props ?? {};
+
+          return  ageSupplyOrder(supplyOrderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AgeSupplyOrderMutationResult = NonNullable<Awaited<ReturnType<typeof ageSupplyOrder>>>
+
+    export type AgeSupplyOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Age a supply run by five minutes in development
+ */
+export const useAgeSupplyOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ageSupplyOrder>>, TError,{supplyOrderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ageSupplyOrder>>,
+        TError,
+        {supplyOrderId: string},
+        TContext
+      > => {
+      return useMutation(getAgeSupplyOrderMutationOptions(options));
+    }
+
+export const getGetSupplyQueueUrl = () => {
+
+
+
+
+  return `/api/supplies/queue`
+}
+
+/**
+ * @summary List active supply runs sorted by live priority
+ */
+export const getSupplyQueue = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder[]> => {
+
+  return customFetch<SupplyOrder[]>(getGetSupplyQueueUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupplyQueueQueryKey = () => {
+    return [
+    `/api/supplies/queue`
+    ] as const;
+    }
+
+
+export const getGetSupplyQueueQueryOptions = <TData = Awaited<ReturnType<typeof getSupplyQueue>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupplyQueueQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplyQueue>>> = ({ signal }) => getSupplyQueue({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplyQueue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupplyQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getSupplyQueue>>>
+export type GetSupplyQueueQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active supply runs sorted by live priority
+ */
+
+export function useGetSupplyQueue<TData = Awaited<ReturnType<typeof getSupplyQueue>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplyQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupplyQueueQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAttachEmergencySuppliesUrl = (emergencyId: string,) => {
+
+
+
+
+  return `/api/emergencies/${emergencyId}/supplies`
+}
+
+/**
+ * @summary Attach a supply order to an emergency dispatch
+ */
+export const attachEmergencySupplies = async (emergencyId: string,
+    emergencySupplyInput: EmergencySupplyInput, options?: Parameters<typeof customFetch>[1]): Promise<SupplyOrder> => {
+
+  return customFetch<SupplyOrder>(getAttachEmergencySuppliesUrl(emergencyId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(emergencySupplyInput)
+  }
+);}
+
+
+
+
+
+export const getAttachEmergencySuppliesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachEmergencySupplies>>, TError,{emergencyId: string;data: BodyType<EmergencySupplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attachEmergencySupplies>>, TError,{emergencyId: string;data: BodyType<EmergencySupplyInput>}, TContext> => {
+
+const mutationKey = ['attachEmergencySupplies'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachEmergencySupplies>>, {emergencyId: string;data: BodyType<EmergencySupplyInput>}> = (props) => {
+          const {emergencyId,data} = props ?? {};
+
+          return  attachEmergencySupplies(emergencyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachEmergencySuppliesMutationResult = NonNullable<Awaited<ReturnType<typeof attachEmergencySupplies>>>
+    export type AttachEmergencySuppliesMutationBody = BodyType<EmergencySupplyInput>
+    export type AttachEmergencySuppliesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Attach a supply order to an emergency dispatch
+ */
+export const useAttachEmergencySupplies = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachEmergencySupplies>>, TError,{emergencyId: string;data: BodyType<EmergencySupplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof attachEmergencySupplies>>,
+        TError,
+        {emergencyId: string;data: BodyType<EmergencySupplyInput>},
+        TContext
+      > => {
+      return useMutation(getAttachEmergencySuppliesMutationOptions(options));
+    }
+
+export const getResetDemoUrl = () => {
+
+
+
+
+  return `/api/dev/reset`
+}
+
+/**
+ * @summary Reset demo fleet, inventory, and orders outside production
+ */
+export const resetDemo = async ( options?: Parameters<typeof customFetch>[1]): Promise<ResetDemo200> => {
+
+  return customFetch<ResetDemo200>(getResetDemoUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResetDemoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetDemo>>, TError,void, TContext> => {
+
+const mutationKey = ['resetDemo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetDemo>>, void> = () => {
+
+
+          return  resetDemo(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetDemoMutationResult = NonNullable<Awaited<ReturnType<typeof resetDemo>>>
+
+    export type ResetDemoMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reset demo fleet, inventory, and orders outside production
+ */
+export const useResetDemo = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetDemo>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resetDemo>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getResetDemoMutationOptions(options));
     }
 

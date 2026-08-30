@@ -1,0 +1,119 @@
+WhaleCall — Live Site Audit
+
+Tested: https://whalecall.replit.app — landing, /emergency, /book, /trip/:id, /fleet, /profile, /sign-in, 404 routes Method: full click-through of both flows, network + API inspection, DOM/accessibility checks Verdict: The booking flow works end to end. The emergency flow — your flagship feature — fails 100% of the time. Fix that first; everything else is secondary.
+
+🔴 CRITICAL — fix before judging
+1. SOS dispatch is completely broken (every attempt fails)
+
+What happens: Complete the Response mode intake → "Send for help" → red text: "Dispatch could not be reached. Try again." Retrying never works.
+
+Verified root cause: POST /api/emergencies returns HTTP 400 with body:
+
+json
+{"error":"No rescue boat is currently available."}
+
+The frontend payload is correct — {"situation":"medical","position":{"lat":18.42,"lng":-64.61},"notes":"","tripId":null}. The failure is server-side data.
+
+Pulling /api/fleet (72 boats) confirms it:
+
+Metric	Value
+Total boats	72
+emergencyEquipped: true	8
+Those 8 boats' status	all 8 are en_route
+emergencyEquipped boats with status available	0
+
+Your own /fleet page prints the smoking gun in its header: RESCUE READY: 0.
+
+The dispatcher presumably filters emergencyEquipped === true && status === 'available', which matches zero boats — always.
+
+Fix (pick one, do the first now):
+
+Seed fix (2 minutes): set the 8 Sea Guard rescue boats to status: 'available' in your seed data. Ship this immediately.
+Resilience fix (15 minutes): if no rescue boat is available, fall back to the nearest en_route rescue boat (an emergency should preempt a routine trip — that's a great judge talking point), then to any available boat, and only then fail.
+Guard: add a startup assertion or a tiny test that fleet.filter(b => b.emergencyEquipped && b.status === 'available').length > 0, so this can't silently regress.
+2. Error messages hide the real failure
+
+Two different backend errors both render as generic connectivity messages:
+
+Real API error	What the user sees
+No rescue boat is currently available.	"Dispatch could not be reached. Try again."
+No boats are available in that class right now.	"We could not reach the dock. Please try again."
+
+A judge clicking SOS concludes your server is down. It isn't — the request completed fine. Worse, the message tells them to retry, which can never succeed.
+
+Fix: surface response.json().error instead of a hardcoded string, and reserve "could not be reached" for actual network/fetch exceptions.
+
+🟠 HIGH — these cost you points with judges
+3. The priority-triage system isn't in the product
+
+This was your differentiator and it isn't there. The emergency intake collects only: situation category (4 options), free-text notes, coordinates. There is no age bracket, no accessibility needs, no medical severity, no priority score, no queue, and no dispatcher view. GET /api/emergencies returns 404, so there's no queue to display.
+
+Right now WhaleCall is "Uber for boats with an SOS button" — the inclusivity angle that made the concept distinctive is missing entirely. If you have time for exactly one feature addition, make it this: three icon rows on the intake + a computed priority score shown on the confirmation screen ("Priority 8 — you are first in the queue"). Even without a dispatcher view, showing the score proves the logic exists.
+
+4. You can book a trip from an island to itself
+
+Coral Cove → Coral Cove, and even Cove Landing → Cove Landing, are both selectable. The map cheerfully renders "Route plotted across the island chain" with a dotted line to nowhere. Clicking Continue then does nothing at all — no error, no explanation. The user is stuck with no idea why.
+
+Fix: filter the departure island/dock out of the arrival dropdowns, and always show a validation message when a submit is blocked.
+
+5. Passenger count isn't checked against boat capacity
+
+Passengers accepts up to 16, but a Water taxi holds 4. Requesting 16 passengers on a water taxi submits happily and fails server-side with the misleading "could not reach the dock" message.
+
+Fix: filter the Boat class dropdown by passenger count (or grey out classes that can't fit), and show capacity next to each option — "Water taxi · up to 4".
+
+6. No fare shown before booking
+
+Your landing page promises "Clear pricing. No surge. No mystery dock." — but the fare ($181.68) only appears after you've committed to the trip. That's the exact opposite of the promise, and a judge reading your own copy will notice.
+
+Fix: show an estimated fare on step 3 before "Call my boat." Also round it — $181.68 for a boat ride reads like a floating-point artifact.
+
+7. Live tracking isn't live
+
+On the trip page the boat marker and the "46 minutes until we reach you" ETA never change — verified over 20+ seconds of observation. There's no polling or WebSocket updating position.
+
+Fix: a setInterval that interpolates the boat's position between origin and destination and decrements the ETA is enough. This is your best visual demo moment and it currently doesn't move.
+
+🟡 MEDIUM — polish that judges will see
+Raw database slugs shown to users. The trip page displays From: coral-cove / To: mango-harbor instead of "Coral Cove" / "Mango Harbor". Very visible on the screen you'll be demoing.
+Broken nav link. "Book a crossing" in the header points to /, not /book.
+Boat marker is out of scale. On the trip map the boat is a giant teal ellipse that overlaps and nearly covers the departure island.
+Every boat looks identical. All 72 fleet cards use the same tan ellipse illustration — a rescue boat, a catamaran, and a speedboat are visually indistinguishable. Even simple color/shape variation per class would help.
+Sign-in page breaks your brand. The Clerk-hosted /sign-in is a flat dark-teal page with no site nav and none of the tropical theme. Style it via Clerk's appearance config to match.
+The island concept is half-implemented. Islands carry only hasRescueStation — there's no hospital / school / store / city island as designed, and every island card says the same "2 public docks." Adding a facilities field and showing icons per island is cheap and restores the theme.
+No search, no clickable map. Island selection is plain native <select> dropdowns; the chart illustration is decorative and non-interactive. Making the 7 islands clickable on the SVG would take minutes and dramatically improve the demo.
+Huge empty space below the card on /emergency (and /book) at desktop width — roughly the bottom half of the screen is dead black/cream.
+Redundant floating button. "Need help on the water" floats over the /emergency page itself, where it's already the whole point of the page.
+♿ ACCESSIBILITY — relevant because inclusivity is your pitch
+
+Failing:
+
+Pinch-zoom is disabled. Your viewport meta is width=device-width, initial-scale=1.0, maximum-scale=1. maximum-scale=1 blocks zoom — a WCAG 2.1 AA failure (1.4.4 Resize Text). Delete maximum-scale=1. This is a one-character fix and a bad thing for an accessibility-themed app to be caught on.
+Tap targets far too small in the emergency flow. "Use my location" and "Cancel" are 16px tall — the guideline is 44px. These are the controls a panicking or elderly user needs most.
+Header nav links are 36px tall, also under 44px.
+
+Passing (worth mentioning to judges):
+
+All images have alt text; no unlabeled buttons or links.
+lang="en" is set.
+404 pages ("That dock isn't here." / "A small squall.") are well designed and on-theme — nice touch.
+⚠️ DEMO-DAY RISK
+
+State looks in-memory and it drains. Booking a trip flipped boat-8 to on_trip and the landing page's live counter went 55 → 54 and stayed there. Two consequences:
+
+Every test run permanently consumes a boat. Enough rehearsals and you could exhaust a class mid-demo and hit "No boats are available in that class" live in front of judges.
+Replit apps sleep and cold-start. If it restarts during judging, all trips vanish (though it would also reset the fleet, which is the one silver lining).
+
+Fix: auto-release boats after N minutes, add a hidden /api/reset endpoint you can hit before your demo, and do a fresh warm-up load of the site 2 minutes before you present so it isn't cold-starting while judges watch.
+
+Recommended order for your remaining time
+Seed the rescue boats as available — SOS goes from 0% to working. (minutes)
+Show real API error text — no more fake "network" failures. (minutes)
+Remove maximum-scale=1 and bump the emergency-flow tap targets. (minutes)
+Map slugs to island names on the trip page. (minutes)
+Fix the "Book a crossing" nav href. (seconds)
+Block same-island bookings + always show a validation message. (~15 min)
+Add the triage fields + priority score to the SOS intake. (~45 min — highest judge value)
+Animate the boat + count down the ETA on the trip page. (~30 min — best visual moment)
+Fare estimate before booking; capacity-aware boat class list.
+Cosmetic: boat marker scale, per-class boat art, Clerk theming.

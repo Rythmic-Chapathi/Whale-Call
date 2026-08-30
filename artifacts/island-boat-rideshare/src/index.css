@@ -252,6 +252,66 @@
   --chart-5: 207 20% 20%;
 }
 
+.supply-mode {
+  --background: 42 76% 94%;
+  --foreground: 31 48% 16%;
+  --border: 37 45% 78%;
+  --card: 45 100% 98%;
+  --card-foreground: 31 48% 16%;
+  --primary: 32 83% 44%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 72% 77%;
+  --secondary-foreground: 31 48% 16%;
+  --muted: 40 53% 87%;
+  --muted-foreground: 31 20% 42%;
+  --input: 37 45% 78%;
+  --ring: 32 83% 44%;
+}
+
+.boat-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.boat-marker-frame {
+  display: grid;
+  width: 58px;
+  height: 42px;
+  place-items: center;
+  border: 2px solid var(--boat-status);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 8px 18px rgba(16, 54, 62, 0.22);
+  transform: rotate(var(--boat-heading));
+}
+
+.boat-marker-frame img {
+  width: 50px;
+  height: 31px;
+  object-fit: contain;
+  transform: rotate(calc(var(--boat-heading) * -1));
+}
+
+@media print {
+  header,
+  footer,
+  .leaflet-control-container {
+    display: none !important;
+  }
+
+  body,
+  .supply-mode,
+  .voyage-mode {
+    background: white !important;
+  }
+
+  .receipt {
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
 .dark {
   --button-outline: rgba(255, 255, 255, 0.1);
   --badge-outline: rgba(255, 255, 255, 0.05);

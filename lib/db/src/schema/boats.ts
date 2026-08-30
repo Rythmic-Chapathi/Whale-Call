@@ -14,6 +14,8 @@ export const boatsTable = pgTable("boats", {
   driverId: text("driver_id").notNull(),
   homeIslandId: text("home_island_id").notNull(),
   emergencyEquipped: boolean("emergency_equipped").notNull().default(false),
+  payloadKg: real("payload_kg").notNull().default(500),
+  refrigerated: boolean("refrigerated").notNull().default(false),
 });
 
 export const insertBoatSchema = createInsertSchema(boatsTable).omit({
