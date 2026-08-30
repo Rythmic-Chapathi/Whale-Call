@@ -144,11 +144,29 @@ function AppShell({ children, emergency = false, supply = false }: { children: R
 
 function Footer() {
   const { data: health } = useHealthCheck({ query: { queryKey: getHealthCheckQueryKey() } });
-  return <footer className="border-t border-sidebar-border bg-sidebar px-5 py-12 text-sidebar-foreground lg:px-8"><div className="mx-auto grid max-w-[1240px] gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
-    <div><Logo dark /><p className="mt-5 max-w-xs text-sm leading-6 text-sidebar-foreground/65">Local captains. Clear fares. A better way across the islands.</p><p className="mt-6 font-mono-ui text-[10px] uppercase tracking-[.18em] text-sidebar-foreground/45">Staying on channel · {health?.status === 'ok' ? 'All boats accounted for' : 'Coastwatch online'}</p></div>
-    <div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-secondary">Navigate</p><div className="mt-4 grid gap-3 text-sm text-sidebar-foreground/70"><Link href="/fleet" data-testid="footer-fleet">The fleet</Link><Link href="/profile" data-testid="footer-profile">Your logbook</Link><Link href="/emergency" data-testid="footer-emergency">Response mode</Link></div></div>
-     <div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-secondary">Whale Call office</p><p className="mt-4 text-sm leading-6 text-sidebar-foreground/70">VHF channel 16<br />Daily, first light to last launch<br />hello@whalecall.local</p><p className="mt-5 text-xs leading-5 text-sidebar-foreground/50">Island photography: <a className="underline underline-offset-4" href="https://unsplash.com" target="_blank" rel="noreferrer">Unsplash contributors</a></p></div>
-  </div></footer>;
+
+  return (
+    <footer className="border-t border-sidebar-border bg-sidebar px-5 py-10 text-sidebar-foreground lg:px-8">
+      <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-between gap-6 sm:flex-row">
+
+        {/* Left Side: Logo & Status */}
+        <div className="flex items-center gap-4">
+          <Logo dark />
+          
+          <div className="flex items-center gap-2 font-mono-ui text-xs text-sidebar-foreground/70">
+            
+            
+          </div>
+        </div>
+
+        {/* Right Side: Credits */}
+        <p className="text-center text-xs text-sidebar-foreground/70 sm:text-right">
+          Built by <span className="font-semibold text-sidebar-foreground">Taran Vijayakumar</span>, <span className="font-semibold text-sidebar-foreground">Rithwik Kothapalli</span>, and <span className="font-semibold text-sidebar-foreground">Alan Alappatt</span>
+        </p>
+
+      </div>
+    </footer>
+  );
 }
 
 function Landing() {
