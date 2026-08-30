@@ -1,6 +1,6 @@
-# [Project name]
+# Island Boat Rideshare
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A tropical boat rideshare that lets travellers book island crossings or request dedicated emergency rescue dispatch.
 
 ## Run & Operate
 
@@ -22,15 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/island-boat-rideshare/src/App.tsx` — wouter routes, Clerk shell, booking, fleet, trip, emergency, and profile screens.
+- `artifacts/island-boat-rideshare/src/index.css` — Voyage/Response visual tokens and responsive UI styles.
+- `artifacts/api-server/src/routes/` — Express route handlers for islands, fleet, trips, and emergencies.
+- `artifacts/api-server/src/lib/fleet.ts` — fleet seed and API mapping helpers; database rows are the canonical fleet source.
+- `lib/db/src/schema/` — Drizzle tables for islands, drivers, boats, trips, and emergencies.
+- `lib/api-spec/openapi.yaml` — source of truth for API contracts and generated hooks.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Fleet data lives in PostgreSQL and is seeded once on API startup; screens do not own mock fleet arrays.
+- Standard rides reserve an available boat immediately, while rescue dispatch selects the nearest available emergency-equipped boat.
+- Client auth uses Replit-managed Clerk with browser session cookies; no bearer-token plumbing is used for the web app.
+- The app keeps a public landing page and uses a warm Voyage presentation for travel with a high-contrast Response presentation for emergencies.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Travellers can explore seven island docks, browse a 72-boat live fleet, request a standard crossing with class-based pricing, track and complete a trip, and dispatch/resolve a rescue incident. Clerk sign-in and sign-up are themed to match the app.
 
 ## User preferences
 
@@ -38,7 +46,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run `pnpm --filter @workspace/api-spec run codegen` after changing `lib/api-spec/openapi.yaml`.
+- Use the API server through `/api` and the artifact workflow rather than direct service ports.
+- Rescue boats are intentionally excluded from standard class selection and are only returned by emergency dispatch.
 
 ## Pointers
 

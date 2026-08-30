@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: fleet
+    description: Canonical island and boat fleet data
+  - name: trips
+    description: Standard boat ride requests and tracking
+  - name: emergencies
+    description: Emergency rescue dispatch
 paths:
   /healthz:
     get:
@@ -24,7 +30,199 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /islands:
+    get:
+      operationId: listIslands
+      tags: [fleet]
+      summary: List island and dock data
+      responses:
+        "200":
+          description: Islands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Island"
+  /fleet:
+    get:
+      operationId: listFleet
+      tags: [fleet]
+      summary: List boats in the canonical fleet
+      parameters:
+        - name: boatClass
+          in: query
+          schema:
+            $ref: "#/components/schemas/BoatClass"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/BoatStatus"
+        - name: emergencyEquipped
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Fleet boats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FleetBoat"
+  /fleet/summary:
+    get:
+      operationId: getFleetSummary
+      tags: [fleet]
+      summary: Get fleet availability summary
+      responses:
+        "200":
+          description: Fleet summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetSummary"
+  /fleet/{boatId}:
+    get:
+      operationId: getFleetBoat
+      tags: [fleet]
+      summary: Get one boat and its assigned driver
+      parameters:
+        - $ref: "#/components/parameters/BoatId"
+      responses:
+        "200":
+          description: Boat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FleetBoat"
+        "404":
+          description: Boat not found
+  /trips:
+    post:
+      operationId: createTrip
+      tags: [trips]
+      summary: Request a standard boat ride
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Trip created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "400":
+          description: Invalid trip request
+  /trips/{tripId}:
+    get:
+      operationId: getTrip
+      tags: [trips]
+      summary: Get trip status and tracking data
+      parameters:
+        - $ref: "#/components/parameters/TripId"
+      responses:
+        "200":
+          description: Trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Trip not found
+  /trips/{tripId}/complete:
+    post:
+      operationId: completeTrip
+      tags: [trips]
+      summary: Complete a trip and return its summary
+      parameters:
+        - $ref: "#/components/parameters/TripId"
+      responses:
+        "200":
+          description: Completed trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Trip not found
+  /emergencies:
+    post:
+      operationId: createEmergency
+      tags: [emergencies]
+      summary: Dispatch the nearest rescue boat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencyInput"
+      responses:
+        "201":
+          description: Emergency dispatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyIncident"
+        "400":
+          description: Invalid emergency request
+  /emergencies/{emergencyId}:
+    get:
+      operationId: getEmergency
+      tags: [emergencies]
+      summary: Get emergency dispatch status
+      parameters:
+        - $ref: "#/components/parameters/EmergencyId"
+      responses:
+        "200":
+          description: Emergency incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyIncident"
+        "404":
+          description: Emergency not found
+  /emergencies/{emergencyId}/resolve:
+    post:
+      operationId: resolveEmergency
+      tags: [emergencies]
+      summary: Mark an emergency incident resolved
+      parameters:
+        - $ref: "#/components/parameters/EmergencyId"
+      responses:
+        "200":
+          description: Resolved incident
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyIncident"
+        "404":
+          description: Emergency not found
 components:
+  parameters:
+    BoatId:
+      name: boatId
+      in: path
+      required: true
+      schema:
+        type: string
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+    EmergencyId:
+      name: emergencyId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +231,210 @@ components:
           type: string
       required:
         - status
+    Coordinate:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+      required: [lat, lng]
+    Dock:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          $ref: "#/components/schemas/Coordinate"
+      required: [id, name, position]
+    Island:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tagline:
+          type: string
+        center:
+          $ref: "#/components/schemas/Coordinate"
+        coastline:
+          type: array
+          items:
+            $ref: "#/components/schemas/Coordinate"
+        docks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dock"
+        hasRescueStation:
+          type: boolean
+      required: [id, name, tagline, center, coastline, docks, hasRescueStation]
+    BoatClass:
+      type: string
+      enum: [water_taxi, cruiser, catamaran, speedboat, rescue]
+    BoatStatus:
+      type: string
+      enum: [available, en_route, on_trip, offline]
+    DriverCertification:
+      type: string
+      enum: [medical, tow, night_ops]
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+        rating:
+          type: number
+        tripsCompleted:
+          type: integer
+        yearsActive:
+          type: integer
+        languages:
+          type: array
+          items:
+            type: string
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverCertification"
+      required: [id, name, avatar, rating, tripsCompleted, yearsActive, languages, certifications]
+    FleetBoat:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        boatClass:
+          $ref: "#/components/schemas/BoatClass"
+        capacity:
+          type: integer
+        position:
+          $ref: "#/components/schemas/Coordinate"
+        heading:
+          type: number
+        status:
+          $ref: "#/components/schemas/BoatStatus"
+        assignedDriver:
+          $ref: "#/components/schemas/Driver"
+        homeIslandId:
+          type: string
+        emergencyEquipped:
+          type: boolean
+      required: [id, name, boatClass, capacity, position, heading, status, assignedDriver, homeIslandId, emergencyEquipped]
+    FleetSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        available:
+          type: integer
+        onTrip:
+          type: integer
+        rescueReady:
+          type: integer
+        activeIslands:
+          type: integer
+      required: [total, available, onTrip, rescueReady, activeIslands]
+    TripInput:
+      type: object
+      properties:
+        pickupIslandId:
+          type: string
+        pickupDockId:
+          type: string
+        destinationIslandId:
+          type: string
+        destinationDockId:
+          type: string
+        boatClass:
+          type: string
+          enum: [water_taxi, cruiser, catamaran, speedboat]
+        passengerCount:
+          type: integer
+          minimum: 1
+          maximum: 16
+      required: [pickupIslandId, pickupDockId, destinationIslandId, destinationDockId, boatClass, passengerCount]
+    Trip:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [matching, assigned, arriving, arrived, in_transit, completed]
+        pickupIslandId:
+          type: string
+        pickupDockId:
+          type: string
+        destinationIslandId:
+          type: string
+        destinationDockId:
+          type: string
+        boatClass:
+          type: string
+        passengerCount:
+          type: integer
+        boat:
+          $ref: "#/components/schemas/FleetBoat"
+        price:
+          type: number
+        etaMinutes:
+          type: integer
+        distanceKm:
+          type: number
+        requestedAt:
+          type: string
+          format: date-time
+        targetArrivalAt:
+          type: string
+          format: date-time
+      required: [id, status, pickupIslandId, pickupDockId, destinationIslandId, destinationDockId, boatClass, passengerCount, boat, price, etaMinutes, distanceKm, requestedAt, targetArrivalAt]
+    EmergencySituation:
+      type: string
+      enum: [stranded, medical, taking_on_water, other]
+    EmergencyInput:
+      type: object
+      properties:
+        situation:
+          $ref: "#/components/schemas/EmergencySituation"
+        position:
+          $ref: "#/components/schemas/Coordinate"
+        notes:
+          type: string
+        tripId:
+          type: ["string", "null"]
+      required: [situation, position, notes]
+    EmergencyIncident:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [dispatching, responding, on_scene, resolved]
+        situation:
+          $ref: "#/components/schemas/EmergencySituation"
+        position:
+          $ref: "#/components/schemas/Coordinate"
+        notes:
+          type: string
+        rescueBoat:
+          $ref: "#/components/schemas/FleetBoat"
+        etaMinutes:
+          type: integer
+        distanceKm:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        tripId:
+          type: ["string", "null"]
+      required: [id, status, situation, position, notes, rescueBoat, etaMinutes, distanceKm, createdAt, tripId]
 

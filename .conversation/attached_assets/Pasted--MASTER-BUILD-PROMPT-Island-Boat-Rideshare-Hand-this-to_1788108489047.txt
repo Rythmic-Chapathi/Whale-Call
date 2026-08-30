@@ -1,0 +1,359 @@
+# MASTER BUILD PROMPT — Island Boat Rideshare
+
+Hand this to any AI coding assistant. Read the whole thing before writing code.
+
+---
+
+## 0. How to use this prompt
+
+**If you are an agentic tool** (Claude Code, Cursor, Windsurf, Codex, Copilot Agent):
+start at section 10, work in build order, run the app between sections.
+
+**If you are a chat-only model** (ChatGPT, Gemini, Claude web, v0): you cannot run
+CLI commands. Where section 4 calls for the Clerk CLI, use the manual install path
+noted there and output the files directly.
+
+**Before writing any code:** map the existing codebase and report back — framework,
+router, package manager, map library, where auth lives, where trip state lives, where
+fleet data currently lives. Then confirm the build order still makes sense. Do not
+start until you've done this.
+
+---
+
+## 1. What you're building
+
+A rideshare app for boats. Users book boat rides between tropical islands the way they
+book an Uber between city addresses. There are two service tiers:
+
+- **Standard rides** — normal point-to-point island hops. Browse, pick a boat class,
+  price it, book it, track it.
+- **Emergency rides** — urgent dispatch for people in trouble on the water: stranded
+  vessel, medical evacuation, storm. Different fleet subset, different dispatch logic,
+  different UI, no price shopping.
+
+Emergency is a **first-class service type**, not a panic button. It has its own entry
+point, its own flow, and its own boats. (There is *also* a separate in-trip safety
+control — see section 8. Don't confuse the two.)
+
+Aesthetic: tropical, illustrated, warm — a place you'd want to travel. Except in the
+emergency flow, which strips all of that. See section 3.
+
+---
+
+## 2. Stack and non-negotiables
+
+- Use the project's existing framework and package manager. Detect, don't assume.
+- Clerk for auth. No other auth provider, no custom auth.
+- One canonical fleet data source. Every screen reads from it. Zero per-component
+  mock arrays.
+- Timers driven by target timestamps, never decrementing counters.
+- No commented-out dead code. Delete what you replace.
+- App must run and be testable after every section.
+- Don't refactor unrelated systems. Note problems you find outside this spec and keep
+  moving.
+
+---
+
+## 3. Design system — two modes
+
+The app has **two visual modes**. This is intentional and load-bearing. Do not blend
+them into a single compromise style.
+
+### Mode A — Voyage (default)
+
+Everything except the emergency flow: landing page, browsing, fleet, standard booking,
+trip tracking, profile.
+
+- **Tropical palette** — turquoise and aqua water, warm sand, coral, sun-bleached
+  wood, deep palm green. Warm, saturated, inviting.
+- **Illustrated island map** — hand-drawn board-game adventure aesthetic. Stylized
+  island shapes with visible coastline outlines, aged-paper texture on water and land,
+  simple decorative terrain marks (palms, hills, small structures), hand-drawn line
+  quality.
+  - Reference for *feel only*: board-game adventure island map style. Build with
+    original SVG shapes and CSS. Do not reproduce or trace any existing artwork.
+  - Functional map first, decoration second. Boat icons and route lines must stay
+    high-contrast against the styled background. If stylization hurts legibility,
+    dial it back.
+- Rounded, friendly UI. Generous whitespace. Soft shadows.
+
+### Mode B — Response (emergency only)
+
+Triggered when the user enters the emergency flow or an in-trip safety action fires.
+The illustration falls away.
+
+- High contrast. Near-black or deep navy background, one urgent accent color, white
+  text.
+- Map drops to a stark functional layer — land/water silhouettes only, no texture, no
+  decorative marks. Position markers and heading are the only visual priority.
+- Oversized touch targets. Large type. Minimum viable information per screen.
+- No animations beyond essential state feedback. No decorative motion.
+- Every non-essential UI element hidden.
+
+**Why:** someone using this is stressed, outdoors, in bad light, possibly one-handed
+on a wet phone. A charming treasure map is actively harmful there. The mode switch
+should read as deliberate and reassuring, not as a different app.
+
+Implement as a theme layer — token swap or context provider — so the transition is a
+single state change, not duplicated component trees.
+
+---
+
+## 4. Auth — Clerk
+
+Replace any existing auth wholesale. Don't patch it.
+
+**Clerk app ID: `app_3Idpz0HyjzcHO5HQB57JAbars8g`**
+
+### CLI path (agentic tools)
+
+```bash
+command -v clerk && clerk --version    # install with `npm install -g clerk` if missing
+clerk update --yes                     # if already installed
+clerk auth login                       # run FIRST. Pause for the user to complete the flow.
+clerk init --app app_3Idpz0HyjzcHO5HQB57JAbars8g
+clerk doctor
+```
+
+Do not pass `--framework` or `--pm` on an existing project — let the CLI detect. Only
+pass them if detection fails or the CLI asks.
+
+### Manual path (chat-only models)
+
+Install `@clerk/nextjs` (or the framework-appropriate Clerk SDK), then follow the
+quickstart at https://clerk.com/docs/llms.txt for that framework. Output the provider
+setup, middleware/proxy file, and env var names the user needs to fill in.
+
+### Hard rules
+
+- Next.js 15+: `auth()` is async. Always `await auth()`.
+- `ClerkProvider` goes inside `<body>`, not wrapping `<html>`.
+- In `proxy.ts` / `middleware.ts`, `config.matcher` must include `'/__clerk/:path*'`
+  immediately after `'/(api|trpc)(.*)'`.
+- Use `@clerk/nextjs`, never `@clerk/clerk-react`.
+- Never expose `CLERK_SECRET_KEY` in client code.
+- Do not read or print the user's env files. Ask for anything you need.
+- If `components.json` exists (shadcn): `npm install @clerk/ui`, apply
+  `theme: shadcn` on `ClerkProvider`, add `@import '@clerk/ui/themes/shadcn.css';`
+  to global CSS.
+
+### Auth UI
+
+Sign-in, sign-up, and signed-in user controls visible and integrated into the existing
+nav — not bolted on. Use `SignInButton`, `SignUpButton`, `Show`
+(`when="signed-out"` / `when="signed-in"`), `UserButton`. Adapt existing auth controls
+rather than duplicating. Style Clerk components to Mode A via `appearance`.
+
+**Done when:** new signup works end to end, profile icon appears in nav, `clerk doctor`
+is clean, protected routes redirect when signed out, old auth code is deleted.
+
+---
+
+## 5. Data layer — fleet, drivers, islands
+
+Build a seeded dataset and make it the **single source of truth**. This is the
+foundation for everything else — do it before the map or the ride flows.
+
+### Boats — 60 to 100
+
+Each needs: id, name, class, capacity, current lat/lng, heading, status
+(`available` / `en_route` / `on_trip` / `offline`), assigned driver id, home island,
+and an `emergency_equipped` flag.
+
+**Classes:**
+- Water taxi — 1–4 passengers, cheapest, most numerous
+- Cruiser — 4–8, mid tier
+- Catamaran — 8–16, premium, island tours
+- Speedboat — 1–4, fastest, priority pricing
+- **Rescue** — emergency only. Never appears in standard booking. Medical/tow
+  equipped. Should be roughly 8–12% of fleet, distributed so no island is far from one.
+
+### Drivers — one per boat
+
+id, name, avatar, rating, trips completed, years active, boat assignment, languages,
+status synced to their boat. Rescue boat operators additionally have certifications
+(medical, tow, night ops) shown in the emergency flow.
+
+### Islands — 6 to 10
+
+id, name, coastline polygon (for the illustrated map), dock/pickup points, whether it
+has a rescue station.
+
+### Rules
+
+- Coordinates must sit on water, near islands and dock points. No boats on land.
+- Realistic distribution — ratings cluster high with spread, classes weighted toward
+  cheaper tiers.
+- Enough boats that the fleet list needs pagination or filtering.
+- **Consistency is the core requirement.** Boat #17 on the map, in the fleet list, in
+  booking, and in trip detail is the same boat with the same driver, rating, and
+  status. Delete every duplicated mock array you find and point that component here.
+- Status propagates. Book a boat and it goes unavailable everywhere immediately.
+
+**Done when:** you can pick a boat on the map, follow it through the full booking flow
+into trip detail, and every field matches at every step.
+
+---
+
+## 6. Map
+
+- **Boat icons, not pins.** Icon shape differs by class, rotates to match heading.
+  Available / busy / offline visually distinguishable at a glance. Rescue boats have
+  a distinct mark.
+- Click a boat → detail card sourced from section 5.
+- Islands render per Mode A styling in section 3, Mode B styling in emergency.
+- Route lines, live position updates, smooth marker interpolation between position
+  updates (don't teleport).
+
+---
+
+## 7. Standard ride flow — model on Uber
+
+Follow Uber's structure and interaction patterns closely. Don't clone their visual
+design — our look, their proven flow.
+
+1. **Set pickup + destination** — island/dock pickers, map selection
+2. **Choose boat class** — stacked selector, ETA and price per class, Uber-style
+3. **Confirm and request**
+4. **Matching** — searching-for-boat state
+5. **Driver assigned** — driver card (photo, name, rating, boat name/class), live boat
+   position moving toward pickup
+6. **Arriving / arrived** — see section 9
+7. **In transit** — route line, live position, ETA to destination
+8. **Complete** — trip summary, rate driver
+
+Bottom-sheet pattern throughout, like Uber. Map stays visible, sheet carries state.
+All data from section 5.
+
+---
+
+## 8. Emergency ride service
+
+This is the differentiator. Build it as a real service, not a decoration.
+
+### Entry points
+
+- Prominent, permanently visible action on the landing page — distinct from the
+  standard booking CTA, unmistakable
+- Available from anywhere in the app via persistent affordance
+- Available during an active standard trip (this is the in-trip safety control —
+  it hands off into this same flow with trip context prefilled)
+
+### Flow
+
+1. **Situation type** — stranded/adrift, medical, taking on water, other. Large
+   targets, minimum taps.
+2. **Confirm** — single deliberate confirm step so it can't fire accidentally. Not a
+   multi-screen form.
+3. **Auto-locate** — pull current position, let user adjust on the stark map.
+4. **Dispatch** — nearest available `emergency_equipped` boat, automatically. **No
+   class selection, no price comparison, no bidding.** Speed overrides everything.
+5. **Tracking** — Mode B UI. Assigned rescue boat, operator name and certifications,
+   live position, ETA, distance. Persistent contact action.
+6. **Resolution** — mark resolved, incident summary.
+
+### Rules
+
+- Switches to Mode B (section 3) on entry.
+- If triggered mid-trip, carries context: current boat, driver, position, destination,
+  ETA — the responder gets it, the user doesn't re-enter it.
+- Rescue-class boats never surface in standard booking.
+- Reachable in the fewest possible taps from any app state. Measure this and report
+  the tap count.
+
+---
+
+## 9. Timer / ETA — build correctly
+
+- Drive off a **target timestamp**, not a decrementing counter. Must survive
+  re-renders, tab switches, and backgrounding without drift or reset.
+- Clean up intervals on unmount. No leaked timers, no double-ticking on remount.
+- Recompute ETA as boat position updates — don't count down blindly while the boat
+  sits still.
+- Format: minutes above 60s, "Arriving now" under threshold.
+
+### Arrival — match Uber
+
+Countdown doesn't hit zero and stall. It transitions:
+
+- Countdown → "Arriving now" → "Your boat has arrived"
+- Bottom sheet expands with driver details, boat identifier, contact actions
+- Visual and haptic cue on arrival
+- Wait timer starts
+- Map recenters on pickup point
+
+**Done when:** a full ride from request to arrival keeps accurate time throughout,
+including across tab switches.
+
+---
+
+## 10. Landing page
+
+A first-time visitor must immediately understand this is boat rideshare between
+islands, and be able to start a ride.
+
+- Rideshare booking is the primary above-the-fold action — pickup/destination entry or
+  one prominent CTA into the flow
+- Live map or fleet preview as hero visual so the product is self-evident
+- Emergency entry point clearly present and visually distinct, not buried
+- Everything else moves below
+- Full Mode A tropical treatment
+
+---
+
+## 11. Branding
+
+**The logo file has not been provided. Ask the user for it before starting this
+section.**
+
+Once you have it:
+
+- It is the *only* logo in the app. Remove every other logo, icon variant, placeholder
+  mark, and framework default.
+- Generate the full favicon set (ico, png sizes, apple-touch-icon).
+- Apply in: nav/header, auth screens (Clerk `appearance`), loading/splash, PWA
+  manifest if present, OG/social meta images.
+- Grep for old logo filenames afterward. Confirm zero references remain.
+
+---
+
+## 12. Build order
+
+Each section must run clean before starting the next. Commit after each.
+
+1. Auth (section 4)
+2. Data layer (section 5) — **everything downstream depends on this**
+3. Design system / theme tokens, both modes (section 3)
+4. Map (section 6)
+5. Standard ride flow (section 7)
+6. Timer (section 9)
+7. Emergency service (section 8)
+8. Landing page (section 10)
+9. Branding (section 11)
+
+---
+
+## 13. Definition of done
+
+- New user signs up via Clerk, sees profile icon, protected routes gated
+- 60+ boats on an illustrated tropical island map with heading-aware class-specific
+  icons
+- Any boat is traceable from map → booking → trip detail with identical data
+- Full standard ride completes with an accurate timer and an Uber-style arrival
+- Emergency flow reachable in minimal taps, switches to Mode B, dispatches a rescue
+  boat automatically with no price step
+- Emergency triggered mid-trip carries trip context
+- Landing page makes both services obvious
+- One logo everywhere, zero orphan references
+- No duplicated mock data anywhere in the codebase
+
+---
+
+## 14. Ask the user before starting
+
+1. The logo file (section 11)
+2. Real backend/database, or client-side only? Changes how section 5 is built.
+3. Are islands real geography or fictional? Changes coastline data sourcing.
+4. Existing design tokens or theme to build Mode A against?
+5. Does an emergency dispatch need to contact anything real (coast guard, operator
+   phone), or is it self-contained in-app for now?

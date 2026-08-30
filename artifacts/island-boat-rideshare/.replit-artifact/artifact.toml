@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Island Boat Rideshare"
+description = "A tropical island boat rideshare app for booking standard water taxis and requesting dedicated emergency rescue dispatch between island docks."
+version = "1.0.0"
+id = "artifacts/island-boat-rideshare"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24528
+
+[services.development]
+run = "pnpm --filter @workspace/island-boat-rideshare run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/island-boat-rideshare", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/island-boat-rideshare/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24528"
+BASE_PATH = "/"

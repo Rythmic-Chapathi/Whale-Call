@@ -1,0 +1,1 @@
+- [Orval Zod compatibility](orval-zod-version.md) — generated API schemas require the workspace's Zod 4 runtime.
