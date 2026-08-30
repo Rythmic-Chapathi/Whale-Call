@@ -558,6 +558,9 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   background-image: linear-gradient(hsl(183 50% 62% / .23) 1px, transparent 1px), linear-gradient(90deg, hsl(183 50% 62% / .23) 1px, transparent 1px);
   background-size: 34px 34px;
 }
+.caribbean-map { min-height: 440px !important; }
+@media (min-width: 640px) { .caribbean-map { min-height: 560px !important; } }
+@media (min-width: 1024px) { .caribbean-map { min-height: 640px !important; } }
 .response-mode .map-grid { background-color: hsl(210 18% 11%); background-image: linear-gradient(hsl(207 20% 20% / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(207 20% 20% / .45) 1px, transparent 1px); }
 .response-mode .island-shape { background-color: hsl(207 18% 14%) !important; border-color: hsl(207 20% 20%) !important; color: hsl(0 0% 100%); }
 .island-shape { clip-path: polygon(18% 18%, 35% 8%, 63% 17%, 82% 11%, 91% 35%, 80% 50%, 88% 73%, 62% 82%, 44% 94%, 25% 78%, 9% 62%, 15% 41%); }

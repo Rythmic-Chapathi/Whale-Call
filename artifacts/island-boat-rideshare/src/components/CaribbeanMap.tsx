@@ -108,11 +108,11 @@ export function CaribbeanMap({
   }, [boats, destinationId, emergency, islands, pickupId, targetPosition]);
 
   if (mapError) {
-    return <div className={`map-grid grid min-h-[320px] place-items-center rounded-xl border border-border ${className}`}><div className="max-w-sm px-6 text-center"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">OpenStreetMap operating area</p><p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser. Port and fleet data remain available.</p></div></div>;
+    return <div className={`caribbean-map map-grid grid place-items-center rounded-xl border border-border ${className}`}><div className="max-w-sm px-6 text-center"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">OpenStreetMap operating area</p><p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser. Port and fleet data remain available.</p></div></div>;
   }
 
   return (
-    <div className={`relative min-h-[320px] overflow-hidden rounded-xl border border-border bg-muted ${className}`} data-testid="caribbean-map" aria-label="OpenStreetMap view of Caribbean islands, ports, and fleet">
+    <div className={`caribbean-map relative overflow-hidden rounded-xl border border-border bg-muted ${className}`} data-testid="caribbean-map" aria-label="OpenStreetMap view of Caribbean islands, ports, and fleet">
       <div ref={containerRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
         <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
