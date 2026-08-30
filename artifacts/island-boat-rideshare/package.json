@@ -59,6 +59,7 @@
     "framer-motion": "catalog:",
     "input-otp": "^1.4.2",
     "lucide-react": "catalog:",
+    "mapbox-gl": "^3.29.0",
     "next-themes": "^0.4.6",
     "react": "catalog:",
     "react-day-picker": "^9.11.1",

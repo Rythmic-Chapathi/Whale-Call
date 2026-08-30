@@ -17,6 +17,7 @@ import {
 } from '@workspace/api-client-react';
 import type { Dock, FleetBoat, Island, TripInput } from '@workspace/api-client-react';
 import NotFound from '@/pages/not-found';
+import { CaribbeanMap } from '@/components/CaribbeanMap';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -109,20 +110,21 @@ function Footer() {
 
 function Landing() {
   const { data: islands, isLoading, isError, refetch } = useListIslands({ query: { queryKey: getListIslandsQueryKey() } });
+  const { data: fleet } = useListFleet(undefined, { query: { queryKey: getListFleetQueryKey() } });
   const { data: summary } = useGetFleetSummary({ query: { queryKey: getGetFleetSummaryQueryKey() } });
   return <AppShell><main>
     <section className="relative overflow-hidden bg-sidebar px-5 pb-24 pt-16 text-sidebar-foreground lg:px-8 lg:pb-32 lg:pt-24">
       <div className="pointer-events-none absolute -right-28 -top-36 h-[550px] w-[550px] rounded-full border-[70px] border-secondary/10" /><div className="pointer-events-none absolute bottom-0 left-[38%] h-36 w-36 rounded-full bg-accent/20 blur-3xl" />
       <div className="relative mx-auto grid max-w-[1240px] items-end gap-14 lg:grid-cols-[1.02fr_.98fr]">
         <div className="rise-in"><p className="font-mono-ui text-[11px] uppercase tracking-[.22em] text-secondary">Whale Call · local passage, done right</p><h1 className="mt-7 max-w-2xl font-display text-6xl font-semibold leading-[.92] tracking-[-.055em]">Get there by<br /><span className="text-secondary">water.</span></h1><p className="mt-8 max-w-md text-base leading-7 text-sidebar-foreground/70">A ride across the bay, called by people who know every shoal, dock, and changing tide.</p><div className="mt-9 grid max-w-xl gap-3 sm:grid-cols-2"><Link href="/book" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] bg-secondary px-5 py-4 text-sm font-extrabold text-sidebar transition-transform hover:-translate-y-1" data-testid="link-hero-book"><span><span className="block text-[10px] uppercase tracking-[.16em] opacity-60">Voyage mode</span><span className="mt-1 block">Plan a crossing</span></span><ArrowRight size={18} /></Link><Link href="/emergency" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] border border-destructive/50 bg-destructive px-5 py-4 text-sm font-extrabold text-white transition-transform hover:-translate-y-1" data-testid="link-hero-emergency"><span><span className="block text-[10px] uppercase tracking-[.16em] text-white/70">Response mode</span><span className="mt-1 block">Need help now</span></span><LifeBuoy size={18} /></Link></div><Link href="/fleet" className="focus-ring mt-4 inline-flex items-center gap-2 text-sm font-bold text-sidebar-foreground/80 hover:text-sidebar-foreground" data-testid="link-hero-fleet">Meet the live fleet <ArrowRight size={15} /></Link></div>
-        <div className="rise-in-delay relative mx-auto w-full max-w-[510px] lg:ml-auto"><div className="map-grid relative h-[340px] overflow-hidden rounded-[38px] border border-sidebar-foreground/10 shadow-2xl sm:h-[410px]">
-          <div className="absolute left-[15%] top-[14%] h-36 w-48 rotate-12 rounded-[42%] bg-[#e8c58c]/80 shadow-lg island-shape" /><div className="absolute right-[9%] top-[42%] h-28 w-40 -rotate-12 rounded-[42%] bg-[#d9b77c]/75 shadow-lg island-shape" /><div className="absolute left-[32%] top-[34%] h-4 w-4 rounded-full bg-destructive ring-8 ring-destructive/15" /><div className="absolute right-[27%] top-[59%] h-4 w-4 rounded-full bg-primary ring-8 ring-primary/15" /><svg className="absolute inset-0 h-full w-full" viewBox="0 0 510 410" fill="none"><path d="M165 145C234 195 305 198 377 266" stroke="#0e5361" strokeDasharray="8 9" strokeWidth="3" /><path d="M165 145C234 195 305 198 377 266" stroke="#f4c95d" strokeDasharray="2 13" strokeLinecap="round" strokeWidth="7" /></svg>
+        <div className="rise-in-delay relative mx-auto w-full max-w-[510px] lg:ml-auto"><div className="relative h-[340px] overflow-hidden rounded-xl border border-sidebar-foreground/10 shadow-2xl sm:h-[410px]">
+          <CaribbeanMap islands={islands ?? []} boats={fleet ?? []} className="h-full min-h-full border-0" />
           <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-sidebar/90 p-4 text-sidebar-foreground backdrop-blur-md"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">Right now</p><p className="mt-1 text-sm font-bold">{summary?.available ?? '—'} boats ready to launch</p></div><div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-sidebar"><Waves size={18} /></div></div>
         </div></div>
       </div>
     </section>
     <section className="mx-auto max-w-[1240px] px-5 py-20 lg:px-8"><div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]"><div><ModePill /><h2 className="mt-5 max-w-sm font-display text-4xl font-semibold leading-tight tracking-[-.04em] sm:text-5xl">Not an app.<br />A local hand.</h2><p className="mt-5 max-w-sm text-sm leading-6 text-muted-foreground">From the first call to the last wake, we keep you in the loop. No surge. No mystery dock.</p></div><div className="grid gap-4 sm:grid-cols-3"><ValueCard n="01" icon={Compass} title="Know the water" text="Every route is drawn by island hands, not an algorithm alone." /><ValueCard n="02" icon={BadgeCheck} title="See your captain" text="A name, a rating, and a boat you can recognize at the dock." /><ValueCard n="03" icon={HeartHandshake} title="Travel looked after" text="Clear pricing and a coastwatch team on channel if plans shift." /></div></div></section>
-     <section className="bg-[#d8ebe8] px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Where we launch</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Seven fictional islands. One good idea.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your dock <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
+     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Where we launch</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Seven Caribbean islands. One operating network.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
       {isLoading ? <div className="mt-10 grid gap-4 sm:grid-cols-3"><LoadingCard /><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-10"><ErrorCard retry={refetch} /></div> : <div className="mt-10 grid gap-4 sm:grid-cols-3">{(islands ?? []).map((island, i) => <IslandCard key={island.id} island={island} index={i} />)}</div>}</div></section>
     <section className="px-5 py-20 lg:px-8"><div className="mx-auto grid max-w-[1240px] items-center gap-12 rounded-[34px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:grid-cols-[1fr_auto] lg:py-14"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.2em] text-secondary">When the ordinary is not enough</p><h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-tight tracking-[-.04em]">Response mode is always one tap away.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/70">For a medical need, a stranded boat, or water coming in. Our rescue-equipped boats and trained captains know what to do next.</p></div><Link href="/emergency" className="focus-ring inline-flex items-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-sm font-extrabold text-white hover:-translate-y-1" data-testid="link-home-emergency">Open Response mode <LifeBuoy size={18} /></Link></div></section>
     <Footer />
@@ -141,41 +143,9 @@ function IslandCard({ island, index }: { island: Island; index: number }) {
   return <Link href="/book" className="group focus-ring relative min-h-[180px] overflow-hidden rounded-[26px] border border-primary/10 bg-card p-6 shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-island-${island.id}`}><div className={`absolute -right-9 -top-9 h-36 w-36 rounded-full ${index === 1 ? 'bg-secondary/60' : 'bg-accent/15'} transition-transform group-hover:scale-125`} /><div className="relative"><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Island 0{index + 1}</p><h3 className="mt-4 font-display text-3xl font-semibold">{island.name}</h3><p className="mt-2 max-w-[210px] text-sm text-muted-foreground">{island.tagline}</p><p className="mt-5 text-xs font-bold text-primary">{island.docks?.length ?? 0} public docks <ArrowRight className="ml-1 inline" size={13} /></p></div></Link>;
 }
 
-const mapPositions: Record<string, { x: number; y: number; width: number; height: number; rotate: number }> = {
-  'coral-cove': { x: 17, y: 19, width: 20, height: 14, rotate: -8 },
-  'pelican-key': { x: 48, y: 11, width: 22, height: 13, rotate: 9 },
-  'mango-harbor': { x: 76, y: 25, width: 18, height: 13, rotate: -6 },
-  'starfish-bay': { x: 10, y: 53, width: 22, height: 14, rotate: 8 },
-  'lighthouse-isle': { x: 42, y: 50, width: 20, height: 13, rotate: -5 },
-  'turtle-point': { x: 72, y: 57, width: 20, height: 13, rotate: 7 },
-  'driftwood-island': { x: 30, y: 69, width: 24, height: 13, rotate: -10 },
-};
-
 function IslandMap({ islands, pickupId, destinationId, emergency = false }: { islands: Island[]; pickupId?: string; destinationId?: string; emergency?: boolean }) {
-  const pickup = pickupId ? mapPositions[pickupId] : undefined;
-  const destination = destinationId ? mapPositions[destinationId] : undefined;
-  const route = pickup && destination ? `M ${pickup.x + pickup.width / 2} ${pickup.y + pickup.height / 2} C 43 41, 58 50, ${destination.x + destination.width / 2} ${destination.y + destination.height / 2}` : '';
-  return <div className={`map-grid relative min-h-[310px] overflow-hidden rounded-[30px] border ${emergency ? 'border-destructive/20' : 'border-primary/10'}`} aria-label="Map of the fictional Whale Call islands" data-testid="island-map">
-    <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,.22) 0 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      {route && <path d={route} fill="none" stroke={emergency ? '#c94c42' : '#f4c95d'} strokeDasharray="2 3" strokeLinecap="round" strokeWidth="1.2" />}
-    </svg>
-    {islands.map((island, index) => {
-      const position = mapPositions[island.id] ?? { x: 10 + (index % 4) * 22, y: 15 + Math.floor(index / 4) * 35, width: 18, height: 13, rotate: 0 };
-      const selected = island.id === pickupId || island.id === destinationId;
-      const role = island.id === pickupId ? 'Leaving' : island.id === destinationId ? 'Arriving' : '';
-      return <div key={island.id} className="absolute" style={{ left: `${position.x}%`, top: `${position.y}%`, width: `${position.width}%`, height: `${position.height}%`, transform: `rotate(${position.rotate}deg)` }}>
-        <div className={`island-shape flex h-full w-full items-center justify-center rounded-[45%] border text-center shadow-md ${selected ? 'border-secondary bg-[#e8c58c]' : 'border-[#d9b77c]/60 bg-[#e5c283]/85'}`}>
-          <span className="px-1 text-[7px] font-extrabold uppercase leading-tight tracking-[.08em] text-[#173943] sm:text-[8px]">{island.name}</span>
-        </div>
-        {selected && <span className={`absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-1 font-mono-ui text-[7px] uppercase tracking-[.12em] ${emergency ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground'}`}>{role}</span>}
-      </div>;
-    })}
-    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-2xl bg-card/90 px-4 py-3 backdrop-blur">
-      <div><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Whale Call chart</p><p className="mt-1 text-xs font-semibold text-muted-foreground">{pickup && destination ? 'Route plotted across the island chain' : 'Seven fictional islands · local docks only'}</p></div>
-      <span className={`h-2.5 w-2.5 rounded-full ${emergency ? 'bg-destructive' : 'bg-accent'}`} />
-    </div>
-  </div>;
+  const { data: boats } = useListFleet(undefined, { query: { queryKey: getListFleetQueryKey() } });
+  return <CaribbeanMap islands={islands} boats={boats ?? []} pickupId={pickupId} destinationId={destinationId} emergency={emergency} />;
 }
 
 function FleetPage() {
@@ -203,7 +173,8 @@ function Stat({ label, value }: { label: string; value?: number }) { return <div
 function BoatCard({ boat }: { boat: FleetBoat }) {
   const [expanded, setExpanded] = useState(false);
   const { data: detail, isLoading } = useGetFleetBoat(boat.id, { query: { enabled: expanded, queryKey: getGetFleetBoatQueryKey(boat.id) } });
-  return <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}><div className="map-grid relative h-40"><div className="absolute left-[20%] top-[35%] h-16 w-24 rotate-[-9deg] rounded-[48%_52%_42%_55%] bg-[#e8c58c] shadow-md"><div className="absolute -right-6 top-7 h-1 w-10 bg-primary/70" /></div><div className="absolute right-5 top-5 flex items-center gap-2 rounded-full bg-card/85 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] backdrop-blur"><span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />{boat.status.replace('_', ' ')}</div></div><div className="p-5"><div className="flex items-start justify-between"><div><h3 className="font-display text-2xl font-semibold">{boat.name}</h3><p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · up to {boat.capacity} passengers</p></div>{boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}</div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span><div><p className="text-sm font-bold">{boat.assignedDriver?.name}</p><p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p></div></div><button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`}>{expanded ? 'Hide boat details' : 'View boat details'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} /></button>{expanded && <div className="mt-3 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid={`details-boat-${boat.id}`}>{isLoading ? 'Opening the boat log…' : `${detail?.assignedDriver?.languages?.join(', ') ?? 'Local crew'} · heading ${Math.round(detail?.heading ?? boat.heading)}° · ${detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0} trips completed`}</div>}</div></article>;
+  const imageClass = boat.boatClass === BoatClass.water_taxi ? 'water-taxi' : boat.boatClass;
+  return <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}><div className="relative h-44 overflow-hidden bg-muted"><img src={`${basePath || ''}/fleet/${imageClass}.jpg`} alt={`${boat.boatClass.replace('_', ' ')} on tropical water`} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-sidebar/55 via-transparent to-transparent" /><div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] shadow-sm backdrop-blur"><span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />{boat.status.replace('_', ' ')}</div></div><div className="p-5"><div className="flex items-start justify-between"><div><h3 className="font-display text-2xl font-semibold">{boat.name}</h3><p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · up to {boat.capacity} passengers</p></div>{boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}</div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span><div><p className="text-sm font-bold">{boat.assignedDriver?.name}</p><p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p></div></div><button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`}>{expanded ? 'Hide boat details' : 'View boat details'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} /></button>{expanded && <div className="mt-3 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid={`details-boat-${boat.id}`}>{isLoading ? 'Opening the boat log…' : `${detail?.assignedDriver?.languages?.join(', ') ?? 'Local crew'} · heading ${Math.round(detail?.heading ?? boat.heading)}° · ${detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0} trips completed`}</div>}</div></article>;
 }
 
 function EmptyCard({ title, text }: { title: string; text: string }) { return <div className="rounded-[28px] border border-dashed border-border bg-card p-12 text-center"><Binoculars className="mx-auto text-accent" size={30} /><h3 className="mt-4 font-display text-2xl">{title}</h3><p className="mt-2 text-sm text-muted-foreground">{text}</p></div>; }
@@ -287,7 +258,21 @@ function FallbackAuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {
 }
 
 function Router() {
-  return <Switch><Route path="/" component={HomeRoute} /><Route path="/book" component={BookingPage} /><Route path="/fleet" component={FleetPage} /><Route path="/trip/:id" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>;
+  const [, setLocation] = useLocation();
+  const [isNavigating, setIsNavigating] = useState(false);
+  return <div onClickCapture={event => {
+    const anchor = (event.target as HTMLElement).closest('a');
+    if (!anchor || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || anchor.target === '_blank') return;
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsNavigating(true);
+    window.setTimeout(() => { setLocation(stripBase(url.pathname) + url.search + url.hash); window.setTimeout(() => setIsNavigating(false), 240); }, 520);
+  }}>
+    <Switch><Route path="/" component={HomeRoute} /><Route path="/book" component={BookingPage} /><Route path="/fleet" component={FleetPage} /><Route path="/trip/:id" component={TripPage} /><Route path="/emergency" component={EmergencyPage} /><Route path="/emergency/:id" component={EmergencyTrackingPage} /><Route path="/profile" component={ProfilePage} /><Route path="/sign-in/*?" component={() => <AuthPage mode="sign-in" />} /><Route path="/sign-up/*?" component={() => <AuthPage mode="sign-up" />} /><Route component={NotFound} /></Switch>
+    {isNavigating && <div className="fixed inset-0 z-[100] grid place-items-center bg-sidebar/90 text-sidebar-foreground backdrop-blur-sm" role="status" aria-live="polite"><div className="text-center"><img src={logoSrc} alt="" className="mx-auto h-20 w-20 animate-spin rounded-full border-4 border-secondary shadow-2xl [animation-duration:1.4s]" /><p className="mt-5 font-mono-ui text-[10px] uppercase tracking-[.22em] text-secondary">Charting the next passage</p></div><div className="absolute left-0 top-0 h-1.5 w-full overflow-hidden bg-white/10"><span className="loading-current block h-full bg-secondary" /></div></div>}
+  </div>;
 }
 
 const clerkAppearance = {

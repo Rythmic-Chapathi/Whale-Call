@@ -30,9 +30,9 @@ export const ISLAND_SEED: Array<{
 }> = [
   {
     id: "coral-cove",
-    name: "Coral Cove",
-    tagline: "A bright little harbor for slow mornings",
-    center: { lat: 18.011, lng: -63.041 },
+    name: "Saint Martin",
+    tagline: "French-Caribbean harbors on a sheltered blue bay",
+    center: { lat: 18.07, lng: -63.05 },
     coastline: [
       { lat: 18.036, lng: -63.074 },
       { lat: 18.052, lng: -63.021 },
@@ -41,16 +41,16 @@ export const ISLAND_SEED: Array<{
       { lat: 17.973, lng: -63.057 },
     ],
     docks: [
-      { id: "coral-main", name: "Cove Landing", position: { lat: 17.988, lng: -63.029 } },
-      { id: "coral-east", name: "Palm Point", position: { lat: 18.026, lng: -63.008 } },
+      { id: "coral-main", name: "Marigot Ferry Terminal", position: { lat: 18.067, lng: -63.087 } },
+      { id: "coral-east", name: "Philipsburg Harbour", position: { lat: 18.017, lng: -63.043 } },
     ],
     hasRescueStation: true,
   },
   {
     id: "pelican-key",
-    name: "Pelican Key",
-    tagline: "White sand, clear water, zero hurry",
-    center: { lat: 18.054, lng: -62.958 },
+    name: "Anguilla",
+    tagline: "Low coral shores and fast ferry connections",
+    center: { lat: 18.22, lng: -63.052 },
     coastline: [
       { lat: 18.087, lng: -62.986 },
       { lat: 18.105, lng: -62.946 },
@@ -59,16 +59,16 @@ export const ISLAND_SEED: Array<{
       { lat: 18.018, lng: -62.968 },
     ],
     docks: [
-      { id: "pelican-west", name: "Pelican Pier", position: { lat: 18.045, lng: -62.977 } },
-      { id: "pelican-east", name: "Seaglass Dock", position: { lat: 18.086, lng: -62.933 } },
+      { id: "pelican-west", name: "Blowing Point Ferry Terminal", position: { lat: 18.177, lng: -63.093 } },
+      { id: "pelican-east", name: "Road Bay Port", position: { lat: 18.202, lng: -63.096 } },
     ],
     hasRescueStation: false,
   },
   {
     id: "mango-harbor",
-    name: "Mango Harbor",
-    tagline: "The island with a sunset in its pocket",
-    center: { lat: 18.075, lng: -62.828 },
+    name: "Saint Barthélemy",
+    tagline: "Compact hillsides gathered around Gustavia",
+    center: { lat: 17.9, lng: -62.833 },
     coastline: [
       { lat: 18.114, lng: -62.864 },
       { lat: 18.13, lng: -62.821 },
@@ -77,16 +77,16 @@ export const ISLAND_SEED: Array<{
       { lat: 18.036, lng: -62.843 },
     ],
     docks: [
-      { id: "mango-old", name: "Old Mango Wharf", position: { lat: 18.053, lng: -62.85 } },
-      { id: "mango-south", name: "Sunset Steps", position: { lat: 18.096, lng: -62.807 } },
+      { id: "mango-old", name: "Gustavia Ferry Terminal", position: { lat: 17.896, lng: -62.852 } },
+      { id: "mango-south", name: "Port de Gustavia", position: { lat: 17.9, lng: -62.851 } },
     ],
     hasRescueStation: true,
   },
   {
     id: "starfish-bay",
-    name: "Starfish Bay",
-    tagline: "Tiny streets and a giant blue horizon",
-    center: { lat: 17.942, lng: -62.972 },
+    name: "Sint Eustatius",
+    tagline: "Historic Oranjestad beneath the Quill",
+    center: { lat: 17.489, lng: -62.973 },
     coastline: [
       { lat: 17.972, lng: -63.006 },
       { lat: 17.991, lng: -62.965 },
@@ -95,16 +95,16 @@ export const ISLAND_SEED: Array<{
       { lat: 17.9, lng: -62.982 },
     ],
     docks: [
-      { id: "starfish-north", name: "Bay North Dock", position: { lat: 17.961, lng: -62.991 } },
-      { id: "starfish-market", name: "Market Steps", position: { lat: 17.925, lng: -62.949 } },
+      { id: "starfish-north", name: "Oranjestad Harbour", position: { lat: 17.482, lng: -62.987 } },
+      { id: "starfish-market", name: "Gallows Bay Pier", position: { lat: 17.478, lng: -62.986 } },
     ],
     hasRescueStation: false,
   },
   {
     id: "lighthouse-isle",
-    name: "Lighthouse Isle",
-    tagline: "Where the trade winds meet the sea",
-    center: { lat: 17.908, lng: -62.84 },
+    name: "Saint Kitts",
+    tagline: "Working ports beneath volcanic ridgelines",
+    center: { lat: 17.357, lng: -62.783 },
     coastline: [
       { lat: 17.947, lng: -62.873 },
       { lat: 17.962, lng: -62.83 },
@@ -113,16 +113,16 @@ export const ISLAND_SEED: Array<{
       { lat: 17.863, lng: -62.848 },
     ],
     docks: [
-      { id: "light-house", name: "Lighthouse Landing", position: { lat: 17.893, lng: -62.86 } },
-      { id: "light-east", name: "Windward Dock", position: { lat: 17.934, lng: -62.814 } },
+      { id: "light-house", name: "Port Zante", position: { lat: 17.294, lng: -62.722 } },
+      { id: "light-east", name: "Basseterre Ferry Terminal", position: { lat: 17.295, lng: -62.724 } },
     ],
     hasRescueStation: true,
   },
   {
     id: "turtle-point",
-    name: "Turtle Point",
-    tagline: "Easygoing coves and calm afternoon water",
-    center: { lat: 17.82, lng: -62.94 },
+    name: "Nevis",
+    tagline: "Quiet crossings under Nevis Peak",
+    center: { lat: 17.155, lng: -62.579 },
     coastline: [
       { lat: 17.855, lng: -62.975 },
       { lat: 17.876, lng: -62.932 },
@@ -131,16 +131,16 @@ export const ISLAND_SEED: Array<{
       { lat: 17.78, lng: -62.948 },
     ],
     docks: [
-      { id: "turtle-north", name: "Turtle Bay", position: { lat: 17.844, lng: -62.958 } },
-      { id: "turtle-cove", name: "Quiet Cove", position: { lat: 17.801, lng: -62.92 } },
+      { id: "turtle-north", name: "Charlestown Ferry Terminal", position: { lat: 17.137, lng: -62.624 } },
+      { id: "turtle-cove", name: "Oualie Water Taxi Pier", position: { lat: 17.198, lng: -62.617 } },
     ],
     hasRescueStation: false,
   },
   {
     id: "driftwood-island",
-    name: "Driftwood Island",
-    tagline: "A little wild, wonderfully worth the ride",
-    center: { lat: 17.79, lng: -62.79 },
+    name: "Antigua",
+    tagline: "Deep-water harbors and trade-wind passages",
+    center: { lat: 17.075, lng: -61.818 },
     coastline: [
       { lat: 17.824, lng: -62.824 },
       { lat: 17.846, lng: -62.783 },
@@ -149,8 +149,8 @@ export const ISLAND_SEED: Array<{
       { lat: 17.748, lng: -62.801 },
     ],
     docks: [
-      { id: "driftwood-west", name: "Driftwood Wharf", position: { lat: 17.777, lng: -62.814 } },
-      { id: "driftwood-east", name: "Reefside Dock", position: { lat: 17.824, lng: -62.769 } },
+      { id: "driftwood-west", name: "St. John's Deep Water Harbour", position: { lat: 17.126, lng: -61.849 } },
+      { id: "driftwood-east", name: "Heritage Quay", position: { lat: 17.122, lng: -61.844 } },
     ],
     hasRescueStation: true,
   },
@@ -182,11 +182,8 @@ const DRIVER_LANGUAGES = [
 ];
 
 export async function seedFleet(): Promise<void> {
-  const [{ value }] = await db.select({ value: count() }).from(islandsTable);
-  if (Number(value) > 0) return;
-
-  await db.insert(islandsTable).values(
-    ISLAND_SEED.map((island) => ({
+  for (const island of ISLAND_SEED) {
+    const values = {
       id: island.id,
       name: island.name,
       tagline: island.tagline,
@@ -195,8 +192,15 @@ export async function seedFleet(): Promise<void> {
       coastline: island.coastline,
       docks: island.docks,
       hasRescueStation: island.hasRescueStation,
-    })),
-  );
+    };
+    await db.insert(islandsTable).values(values).onConflictDoUpdate({
+      target: islandsTable.id,
+      set: values,
+    });
+  }
+
+  const [{ value }] = await db.select({ value: count() }).from(boatsTable);
+  if (Number(value) > 0) return;
 
   const drivers = Array.from({ length: 72 }, (_, index) => {
     const name = DRIVER_NAMES[index % DRIVER_NAMES.length];

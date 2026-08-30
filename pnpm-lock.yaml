@@ -378,6 +378,9 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.545.0(react@19.1.0)
+      mapbox-gl:
+        specifier: ^3.29.0
+        version: 3.29.0
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2471,6 +2474,9 @@ packages:
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
+
+  mapbox-gl@3.29.0:
+    resolution: {integrity: sha512-Fnh1WLsZMfihwRZY5scp456iQuZo9G97tTpb26bf/Ejsi/L7O+4dE9+I03VoOor2ul3DEOp6F2P3273omyVsNw==}
 
   markdown-it@14.3.0:
     resolution: {integrity: sha512-RCEsPjR+sr0x+AuYp601tKTkgFG4YEPLCzHST3cQ/fhlJkqAkz1L2/Qbp1j9qw5SBwQHFBoW8+hoN5xssOF0Tw==}
@@ -5059,6 +5065,8 @@ snapshots:
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  mapbox-gl@3.29.0: {}
 
   markdown-it@14.3.0:
     dependencies:
