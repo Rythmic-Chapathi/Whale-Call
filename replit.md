@@ -1,6 +1,6 @@
-# Island Boat Rideshare
+# Whale Call
 
-A tropical boat rideshare that lets travellers book island crossings or request dedicated emergency rescue dispatch.
+A tropical island rideshare and emergency response app for the fictional Whale Call island chain.
 
 ## Run & Operate
 
@@ -22,7 +22,7 @@ A tropical boat rideshare that lets travellers book island crossings or request 
 
 ## Where things live
 
-- `artifacts/island-boat-rideshare/src/App.tsx` — wouter routes, Clerk shell, booking, fleet, trip, emergency, and profile screens.
+- `artifacts/island-boat-rideshare/src/App.tsx` — wouter routes, Clerk shell, booking, fictional island map, fleet, trip, emergency, and profile screens.
 - `artifacts/island-boat-rideshare/src/index.css` — Voyage/Response visual tokens and responsive UI styles.
 - `artifacts/api-server/src/routes/` — Express route handlers for islands, fleet, trips, and emergencies.
 - `artifacts/api-server/src/lib/fleet.ts` — fleet seed and API mapping helpers; database rows are the canonical fleet source.
@@ -38,7 +38,7 @@ A tropical boat rideshare that lets travellers book island crossings or request 
 
 ## Product
 
-Travellers can explore seven island docks, browse a 72-boat live fleet, request a standard crossing with class-based pricing, track and complete a trip, and dispatch/resolve a rescue incident. Clerk sign-in and sign-up are themed to match the app.
+Travellers can explore seven fictional island docks, browse a 72-boat live fleet, request a standard crossing with class-based pricing, track and complete a trip, and dispatch/resolve a rescue incident. Clerk sign-in and sign-up are themed to match Whale Call.
 
 ## User preferences
 

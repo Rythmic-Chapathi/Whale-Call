@@ -1,10 +1,10 @@
-import { Anchor, ArrowLeft, LifeBuoy } from 'lucide-react';
+import { ArrowLeft, LifeBuoy } from 'lucide-react';
 import { Link } from 'wouter';
 
 export default function NotFound() {
   return <main className="grid min-h-[100dvh] place-items-center bg-sidebar px-5 text-sidebar-foreground">
     <div className="w-full max-w-xl text-center">
-      <div className="mx-auto grid h-16 w-16 place-items-center rounded-[20px] bg-secondary text-sidebar"><Anchor size={30} /></div>
+      <img src="/whale-call-logo.png" alt="Whale Call" className="mx-auto h-16 w-16 rounded-[20px] object-cover" />
       <p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.22em] text-secondary" data-testid="text-404-kicker">Off the chart</p>
       <h1 className="mt-4 font-display text-6xl font-semibold tracking-[-.06em] sm:text-8xl" data-testid="text-404-title">That dock<br />isn't here.</h1>
       <p className="mx-auto mt-6 max-w-sm text-sm leading-6 text-sidebar-foreground/60" data-testid="text-404-message">This page drifted beyond our map. Head back to a known island or open Response mode if you need a real hand.</p>
