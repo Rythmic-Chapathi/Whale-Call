@@ -9,6 +9,16 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface LocationSearchResult {
+  placeId: string;
+  displayName: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category: string;
+  type: string;
+}
+
 export interface Coordinate {
   lat: number;
   lng: number;
@@ -334,6 +344,19 @@ export interface SupplyOrder {
   /** @nullable */
   allocationNote: string | null;
 }
+
+export type SearchLocationsParams = {
+/**
+ * @minLength 2
+ * @maxLength 80
+ */
+q: string;
+/**
+ * @minimum 1
+ * @maximum 5
+ */
+limit?: number;
+};
 
 export type ListFleetParams = {
 boatClass?: BoatClass;

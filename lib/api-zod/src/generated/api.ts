@@ -18,6 +18,34 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Search real locations in the operating area
+ */
+export const searchLocationsQueryQMin = 2;
+export const searchLocationsQueryQMax = 80;
+
+export const searchLocationsQueryLimitDefault = 5;
+export const searchLocationsQueryLimitMax = 5;
+
+
+
+export const SearchLocationsQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchLocationsQueryQMin).max(searchLocationsQueryQMax),
+  "limit": zod.coerce.number().int().min(1).max(searchLocationsQueryLimitMax).default(searchLocationsQueryLimitDefault)
+})
+
+export const SearchLocationsResponseItem = zod.object({
+  "placeId": zod.string(),
+  "displayName": zod.string(),
+  "name": zod.string(),
+  "lat": zod.number(),
+  "lng": zod.number(),
+  "category": zod.string(),
+  "type": zod.string()
+})
+export const SearchLocationsResponse = zod.array(SearchLocationsResponseItem)
+
+
+/**
  * @summary List island and dock data
  */
 export const ListIslandsResponseItem = zod.object({

@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: geocoding
+    description: Search real places in the Whale Call operating area
   - name: fleet
     description: Canonical island and boat fleet data
   - name: trips
@@ -32,6 +34,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /geocode/search:
+    get:
+      operationId: searchLocations
+      tags: [geocoding]
+      summary: Search real locations in the operating area
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 80
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+            default: 5
+      responses:
+        "200":
+          description: Matching locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LocationSearchResult"
+        "400":
+          description: Invalid search query
+        "429":
+          description: Nominatim rate limit
+        "502":
+          description: Geocoding service unavailable
   /islands:
     get:
       operationId: listIslands
@@ -419,6 +456,24 @@ components:
           type: string
       required:
         - status
+    LocationSearchResult:
+      type: object
+      properties:
+        placeId:
+          type: string
+        displayName:
+          type: string
+        name:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        category:
+          type: string
+        type:
+          type: string
+      required: [placeId, displayName, name, lat, lng, category, type]
     Coordinate:
       type: object
       properties:
