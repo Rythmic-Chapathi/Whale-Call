@@ -88,12 +88,20 @@ export function CaribbeanMap({
       map.fitBounds(L.latLngBounds(points.map(point => [point.lat, point.lng])), {
         padding: [70, 70],
         maxZoom: 11,
-        animate: true,
+        // Boat/trip polling can rebuild this effect while Leaflet is still
+        // animating. A non-animated fit avoids callbacks firing on a removed
+        // map pane in the proxied preview browser.
+        animate: false,
       });
     }
-    window.setTimeout(() => map.invalidateSize(), 100);
+    const resizeTimer = window.setTimeout(() => {
+      if (!map.getContainer().isConnected) return;
+      map.invalidateSize({ animate: false });
+    }, 100);
 
     return () => {
+      window.clearTimeout(resizeTimer);
+      map.stop();
       markerGroup.clearLayers();
       map.remove();
     };
