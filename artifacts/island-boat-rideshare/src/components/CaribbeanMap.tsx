@@ -29,7 +29,10 @@ const islandLabelNudges: Record<string, { lat: number; lng: number }> = {
   "driftwood-island": { lat: 0.045, lng: 0.08 },
 };
 
-const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
+const rawMapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
+const mapboxToken = typeof rawMapboxToken === 'string' && /^pk\.[A-Za-z0-9._-]+$/.test(rawMapboxToken.trim())
+  ? rawMapboxToken.trim()
+  : undefined;
 
 function boatMarkerPng(color: string, heading: number) {
   const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/fleet/whale-call-boat.png`;
@@ -50,6 +53,7 @@ export function CaribbeanMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const onIslandClickRef = useRef(onIslandClick);
   const [mapError, setMapError] = useState(false);
+  const [satelliteUnavailable, setSatelliteUnavailable] = useState(false);
 
   useEffect(() => {
     onIslandClickRef.current = onIslandClick;
@@ -58,6 +62,8 @@ export function CaribbeanMap({
   useEffect(() => {
     if (!containerRef.current) return;
     let map: L.Map;
+    let satelliteLayer: L.TileLayer | undefined;
+    setSatelliteUnavailable(false);
     try {
       map = L.map(containerRef.current, {
         zoomControl: true,
@@ -65,7 +71,7 @@ export function CaribbeanMap({
         preferCanvas: true,
       }).setView([17.8, -62.75], 7.1);
       if (mapboxToken) {
-        const satelliteLayer = L.tileLayer(
+        satelliteLayer = L.tileLayer(
           `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/512/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(mapboxToken)}`,
           {
             tileSize: 512,
@@ -74,8 +80,15 @@ export function CaribbeanMap({
             attribution: '&copy; Mapbox &copy; OpenStreetMap',
           },
         );
-        satelliteLayer.on('tileerror', () => setMapError(true));
+        satelliteLayer.on('tileerror', () => {
+          if (!satelliteLayer) return;
+          satelliteLayer.removeFrom(map);
+          satelliteLayer = undefined;
+          setSatelliteUnavailable(true);
+        });
         satelliteLayer.addTo(map);
+      } else {
+        setSatelliteUnavailable(false);
       }
     } catch {
       setMapError(true);
@@ -159,6 +172,7 @@ export function CaribbeanMap({
     return () => {
       window.clearTimeout(resizeTimer);
       map.stop();
+      satelliteLayer?.removeFrom(map);
       markerGroup.clearLayers();
       map.remove();
     };
@@ -173,7 +187,10 @@ export function CaribbeanMap({
       <div ref={containerRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
         <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
-        <p className="mt-1 text-xs font-semibold">{mapboxToken ? 'Mapbox satellite · live ports · shared route view' : 'Island chart · live ports · shared route view'}</p>
+        <p className="mt-1 text-xs font-semibold">
+          {mapboxToken && !satelliteUnavailable ? 'Mapbox satellite · live ports · shared route view' : 'Island chart · live ports · shared route view'}
+        </p>
+        {satelliteUnavailable && <p className="mt-1 text-[10px] text-muted-foreground">Satellite imagery unavailable; chart view remains live.</p>}
       </div>
     </div>
   );
