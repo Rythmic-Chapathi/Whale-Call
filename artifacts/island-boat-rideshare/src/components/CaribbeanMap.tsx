@@ -4,6 +4,16 @@ import type { FleetBoat, Island } from '@workspace/api-client-react';
 
 type Coordinate = { lat: number; lng: number };
 
+type BoatMotion = {
+  marker: L.Marker;
+  origin: Coordinate;
+  radiusLat: number;
+  radiusLng: number;
+  phase: number;
+  speed: number;
+  pattern: 0 | 1 | 2;
+};
+
 type CaribbeanMapProps = {
   islands: Island[];
   boats?: FleetBoat[];
@@ -34,10 +44,36 @@ const mapboxToken = typeof rawMapboxToken === 'string' && /^pk\.[A-Za-z0-9._-]+$
   ? rawMapboxToken.trim()
   : undefined;
 
-function boatMarkerPng(color: string, heading: number) {
-  const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/fleet/whale-call-boat.png`;
+function boatMarkerPng(color: string, heading: number = 0) {
+  const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/boat.png`;
   const safeHeading = Number.isFinite(heading) ? ((heading % 360) + 360) % 360 : 0;
   return `<span class="boat-marker-frame" style="--boat-status:${color};--boat-heading:${safeHeading}deg" aria-hidden="true"><img src="${src}" alt="" /></span>`;
+}
+
+function hashString(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function isOpenWater(position: Coordinate, islands: Island[]) {
+  return islands.every(island => {
+    const center = island.center;
+    if (center) {
+      const latDistance = position.lat - center.lat;
+      const lngDistance = (position.lng - center.lng) * Math.cos((center.lat * Math.PI) / 180);
+      if (Math.hypot(latDistance, lngDistance) < 0.032) return false;
+    }
+    return (island.docks ?? []).every(dock => {
+      if (!dock.position) return true;
+      const latDistance = position.lat - dock.position.lat;
+      const lngDistance = (position.lng - dock.position.lng) * Math.cos((dock.position.lat * Math.PI) / 180);
+      return Math.hypot(latDistance, lngDistance) >= 0.014;
+    });
+  });
 }
 
 export function CaribbeanMap({
@@ -53,7 +89,6 @@ export function CaribbeanMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const onIslandClickRef = useRef(onIslandClick);
   const [mapError, setMapError] = useState(false);
-  const [satelliteUnavailable, setSatelliteUnavailable] = useState(false);
 
   useEffect(() => {
     onIslandClickRef.current = onIslandClick;
@@ -62,42 +97,47 @@ export function CaribbeanMap({
   useEffect(() => {
     if (!containerRef.current) return;
     let map: L.Map;
-    let satelliteLayer: L.TileLayer | undefined;
-    setSatelliteUnavailable(false);
+    let tileLayer: L.TileLayer;
+
     try {
       map = L.map(containerRef.current, {
         zoomControl: true,
-        attributionControl: true,
+        attributionControl: false,
         preferCanvas: true,
       }).setView([17.8, -62.75], 7.1);
+
       if (mapboxToken) {
-        satelliteLayer = L.tileLayer(
+        tileLayer = L.tileLayer(
           `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/512/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(mapboxToken)}`,
           {
             tileSize: 512,
             zoomOffset: -1,
             maxZoom: 18,
-            attribution: '&copy; Mapbox &copy; OpenStreetMap',
-          },
+          }
         );
-        satelliteLayer.on('tileerror', () => {
-          if (!satelliteLayer) return;
-          satelliteLayer.removeFrom(map);
-          satelliteLayer = undefined;
-          setSatelliteUnavailable(true);
-        });
-        satelliteLayer.addTo(map);
       } else {
-        setSatelliteUnavailable(false);
+        tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        });
       }
+
+      tileLayer.on('tileerror', () => {
+        tileLayer.removeFrom(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+      });
+
+      tileLayer.addTo(map);
     } catch {
       setMapError(true);
       return;
     }
 
     const markerGroup = L.layerGroup().addTo(map);
+
+    // 1. Docks & Ports
     for (const island of islands) {
       for (const dock of island.docks ?? []) {
+        if (!dock.position?.lat || !dock.position?.lng) continue;
         const icon = L.divIcon({
           className: 'port-marker-icon',
           html: '<span></span>',
@@ -109,89 +149,152 @@ export function CaribbeanMap({
           .addTo(markerGroup);
       }
     }
-    for (const boat of boats.slice(0, 30)) {
-      const color = emergency ? '#FF3B30' : boat.status === 'available' ? '#14919B' : '#5A6B74';
+
+    // 2. Active vessels
+    const boatMotions: BoatMotion[] = [];
+
+    for (const boat of boats) {
+      const lat = boat.position?.lat ?? (boat as any).lat ?? (boat as any).latitude;
+      const lng = boat.position?.lng ?? (boat as any).lng ?? (boat as any).longitude;
+
+      if (typeof lat !== 'number' || typeof lng !== 'number') continue;
+
+      const status = boat.status ?? 'available';
+      const color = emergency ? '#FF3B30' : status === 'available' ? '#14919B' : '#5A6B74';
+
       const icon = L.divIcon({
         className: 'boat-map-marker',
-        html: boatMarkerPng(color, boat.heading),
+        html: boatMarkerPng(color, boat.heading ?? 0),
         iconSize: [58, 42],
         iconAnchor: [29, 21],
       });
-      L.marker([boat.position.lat, boat.position.lng], { icon, title: `${boat.name} · ${boat.status.replace('_', ' ')}` }).addTo(markerGroup);
+
+      const marker = L.marker([lat, lng], {
+        icon,
+        title: `${boat.name ?? 'Vessel'} · ${status.replace('_', ' ')}`,
+        zIndexOffset: 2000,
+      }).addTo(markerGroup);
+      const seed = hashString(boat.id ?? boat.name ?? `boat-${boatMotions.length}`);
+      boatMotions.push({
+        marker,
+        origin: { lat, lng },
+        radiusLat: 0.009 + ((seed >>> 8) % 6) * 0.0012,
+        radiusLng: 0.013 + ((seed >>> 12) % 6) * 0.0018,
+        phase: (seed % 628) / 100,
+        speed: 0.34 + ((seed >>> 16) % 7) * 0.035,
+        pattern: (seed % 3) as BoatMotion['pattern'],
+      });
     }
+
+    let animationFrame = 0;
+    let animationStopped = false;
+    const animationStart = performance.now();
+    const animateBoats = (now: number) => {
+      if (animationStopped || !map.getContainer().isConnected) return;
+      const elapsed = (now - animationStart) / 1000;
+      for (const motion of boatMotions) {
+        const time = elapsed * motion.speed + motion.phase;
+        const candidate = motion.pattern === 0
+          ? {
+              lat: motion.origin.lat + Math.sin(time * 2) * motion.radiusLat * 0.55,
+              lng: motion.origin.lng + Math.sin(time) * motion.radiusLng,
+            }
+          : motion.pattern === 1
+            ? {
+                lat: motion.origin.lat + Math.cos(time) * motion.radiusLat,
+                lng: motion.origin.lng + Math.sin(time) * motion.radiusLng,
+              }
+            : {
+                lat: motion.origin.lat + Math.cos(time * 0.7) * motion.radiusLat * 0.8,
+                lng: motion.origin.lng + (Math.sin(time) + Math.sin(time * 0.45) * 0.35) * motion.radiusLng * 0.75,
+              };
+        motion.marker.setLatLng(isOpenWater(candidate, islands) ? candidate : motion.origin);
+      }
+      animationFrame = window.requestAnimationFrame(animateBoats);
+    };
+    animationFrame = window.requestAnimationFrame(animateBoats);
+
+    // 3. Island Labels Only (White shape buttons removed)
     for (const island of islands) {
+      if (!island.center?.lat || !island.center?.lng) continue;
+
       const selected = island.id === pickupId || island.id === destinationId;
       const nudge = islandLabelNudges[island.id] ?? { lat: 0.04, lng: 0 };
       const labelPosition = { lat: island.center.lat + nudge.lat, lng: island.center.lng + nudge.lng };
-      const shapeIcon = L.divIcon({
-        className: 'island-shape-icon',
-        html: `<button type="button" role="link" tabindex="0" class="island-shape-button${selected ? ' island-shape-selected' : ''}" aria-label="View ${escapeHtml(island.name)}"><span aria-hidden="true"></span></button>`,
-        iconSize: [42, 28],
-        iconAnchor: [21, 14],
-      });
-      L.marker([island.center.lat, island.center.lng], { icon: shapeIcon, title: `View ${island.name}`, zIndexOffset: 500 })
-        .on('click', () => onIslandClickRef.current?.(island.id))
-        .addTo(markerGroup);
+
       const icon = L.divIcon({
         className: 'island-label-icon',
         html: `<button type="button" role="link" tabindex="0" class="island-label-button${selected ? ' island-label-selected' : ''}" aria-label="View ${escapeHtml(island.name)}">${escapeHtml(island.name)}</button>`,
         iconSize: [112, 20],
         iconAnchor: [56, -7],
       });
+
       L.marker([labelPosition.lat, labelPosition.lng], { icon, title: `View ${island.name}`, zIndexOffset: 1000 })
         .on('click', () => onIslandClickRef.current?.(island.id))
         .addTo(markerGroup);
     }
 
+    // 4. Planned Route Polyline
     const pickupIsland = islands.find(island => island.id === pickupId);
     const destinationIsland = islands.find(island => island.id === destinationId);
     const pickup = pickupIsland?.docks?.[0]?.position ?? pickupIsland?.center;
     const destination = destinationIsland?.docks?.[0]?.position ?? destinationIsland?.center;
-    const points = [pickup, destination, targetPosition].filter(Boolean) as Coordinate[];
+    const points = [pickup, destination, targetPosition].filter(
+      (point): point is Coordinate => Boolean(point?.lat && point?.lng)
+    );
+
     if (points.length >= 2) {
-      L.polyline(points.map(point => [point.lat, point.lng] as [number, number]), {
-        color: emergency ? '#FF3B30' : '#14919B',
-        weight: 4,
-        dashArray: '8 8',
-        opacity: 0.9,
-      }).addTo(map);
+      L.polyline(
+        points.map(point => [point.lat, point.lng] as [number, number]),
+        {
+          color: emergency ? '#FF3B30' : '#14919B',
+          weight: 4,
+          dashArray: '8 8',
+          opacity: 0.9,
+        }
+      ).addTo(map);
+
       map.fitBounds(L.latLngBounds(points.map(point => [point.lat, point.lng])), {
         padding: [70, 70],
         maxZoom: 11,
-        // Boat/trip polling can rebuild this effect while Leaflet is still
-        // animating. A non-animated fit avoids callbacks firing on a removed
-        // map pane in the proxied preview browser.
         animate: false,
       });
     }
+
     const resizeTimer = window.setTimeout(() => {
       if (!map.getContainer().isConnected) return;
       map.invalidateSize({ animate: false });
     }, 100);
 
     return () => {
+      animationStopped = true;
+      window.cancelAnimationFrame(animationFrame);
       window.clearTimeout(resizeTimer);
       map.stop();
-      satelliteLayer?.removeFrom(map);
       markerGroup.clearLayers();
       map.remove();
     };
   }, [boats, destinationId, emergency, islands, pickupId, targetPosition]);
 
   if (mapError) {
-    return <div className={`caribbean-map map-grid grid place-items-center rounded-xl border border-border ${className}`}><div className="max-w-sm px-6 text-center"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Whale Call operating area</p><p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p><p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser. Port and route data remain available.</p></div></div>;
+    return (
+      <div className={`caribbean-map map-grid grid place-items-center rounded-xl border border-border ${className}`}>
+        <div className="max-w-sm px-6 text-center">
+          <p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Whale Call operating area</p>
+          <p className="mt-2 text-sm font-semibold">{islands.map(island => island.name).join(' · ')}</p>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">Interactive chart unavailable in this browser.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className={`caribbean-map relative overflow-hidden rounded-xl border border-border bg-muted ${className}`} data-testid="caribbean-map" aria-label="Interactive chart of Caribbean islands, ports, and routes">
+    <div
+      className={`caribbean-map relative overflow-hidden rounded-xl border border-border bg-muted ${className}`}
+      data-testid="caribbean-map"
+      aria-label="Interactive chart of Caribbean islands, ports, and routes"
+    >
       <div ref={containerRef} className="absolute inset-0" />
-      <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
-        <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
-        <p className="mt-1 text-xs font-semibold">
-          {mapboxToken && !satelliteUnavailable ? 'Mapbox satellite · live ports · shared route view' : 'Island chart · live ports · shared route view'}
-        </p>
-        {satelliteUnavailable && <p className="mt-1 text-[10px] text-muted-foreground">Satellite imagery unavailable; chart view remains live.</p>}
-      </div>
     </div>
   );
 }

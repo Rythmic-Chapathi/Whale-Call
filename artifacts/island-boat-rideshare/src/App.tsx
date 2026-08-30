@@ -10,10 +10,10 @@ import {
   Star, Waves, X, Cross, Siren
 } from 'lucide-react';
 import {
-  BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetBoatQueryKey, getGetFleetSummaryQueryKey,
-  getGetTripQueryKey, getListFleetQueryKey, getListIslandsQueryKey, getHealthCheckQueryKey,
+  BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetSummaryQueryKey,
+  getGetTripQueryKey, getListCompletedTripsQueryKey, getListFleetQueryKey, getListIslandsQueryKey, getHealthCheckQueryKey,
   useCompleteTrip, useCreateEmergency, useCreateTrip, useGetEmergency, useGetFleetSummary,
-  useGetFleetBoat, useGetTrip, useHealthCheck, useListFleet, useListIslands, useResolveEmergency,
+  useGetTrip, useHealthCheck, useListCompletedTrips, useListFleet, useListIslands, useResolveEmergency,
 } from '@workspace/api-client-react';
 import type { Dock, FleetBoat, Island, Trip, TripInput } from '@workspace/api-client-react';
 import NotFound from '@/pages/not-found';
@@ -129,16 +129,35 @@ function AppShell({ children, emergency = false, supply = false }: { children: R
           {shellNav.map(item => <Link key={item.href} href={item.href} className="focus-ring inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}>{item.label}</Link>)}
         </nav></div>
         <div className="flex items-center gap-3">
-          <ModePill emergency={emergency} supply={supply} />
-          {!auth.signedIn && <><Link href="/sign-in" className="hidden rounded-full px-4 py-2 text-sm font-bold text-foreground hover:bg-muted sm:inline-flex" data-testid="link-sign-in">Sign in</Link><Link href="/sign-up" className="hidden rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground sm:inline-flex" data-testid="link-sign-up">Create account</Link></>}
-          {auth.signedIn && <><Link href="/profile" className="focus-ring hidden items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-1.5 pr-3 text-sm font-bold sm:flex" data-testid="link-user-profile"><span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs text-primary-foreground">{auth.user?.firstName?.[0] ?? 'A'}</span>{auth.user?.firstName ?? 'Captain'}</Link><button type="button" onClick={auth.signOut} className="hidden p-2 text-muted-foreground hover:text-foreground sm:block" data-testid="button-sign-out" aria-label="Sign out"><LogOut size={17} /></button></>}
-          <button type="button" className="rounded-full p-2 hover:bg-muted md:hidden" onClick={() => setOpen(!open)} data-testid="button-open-menu" aria-label="Open navigation">{open ? <X size={21} /> : <Menu size={21} />}</button>
+          {!auth.signedIn && (
+            <>
+              <Link href="/sign-in" className="hidden rounded-full px-4 py-2 text-sm font-bold text-foreground hover:bg-muted sm:inline-flex" data-testid="link-sign-in">Sign in</Link>
+              <Link href="/sign-up" className="hidden rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground sm:inline-flex" data-testid="link-sign-up">Create account</Link>
+            </>
+          )}
+          ...
         </div>
       </div>
       {open && <nav className="border-t border-border px-5 py-3 md:hidden">{shellNav.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-border/70 py-3 text-sm font-semibold" data-testid={`link-mobile-${item.label.toLowerCase().replaceAll(' ', '-')}`}>{item.label}</Link>)}<Link href="/emergency" className="block py-3 text-sm font-bold text-destructive" data-testid="link-mobile-emergency">Open Response mode</Link></nav>}
     </header>
     {children}
-    {!emergency ? <Link href="/emergency" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-destructive/20 bg-destructive px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-float"><LifeBuoy size={16} />Need help on the water</Link> : <Link href="/supplies" className="focus-ring fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border-2 border-amber-700/20 bg-amber-600 px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 print:hidden" data-testid="link-emergency-supplies"><Cross size={16} />Send supplies too</Link>}
+    {!emergency ? (
+      <Link
+        href="/emergency"
+        className="focus-ring fixed bottom-5 right-5 z-30 hidden min-h-11 items-center gap-2 rounded-full border border-destructive/20 bg-destructive px-4 py-3 text-xs font-extrabold tracking-wide text-white shadow-lg transition-transform hover:-translate-y-1 sm:inline-flex print:hidden"
+        data-testid="link-emergency-float"
+      >
+        <LifeBuoy size={16} /> Need help on the water
+      </Link>
+    ) : (
+      <Link
+        href="/supplies"
+        className="focus-ring fixed bottom-5 right-5 z-30 hidden min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-primary px-4 py-3 text-xs font-extrabold tracking-wide text-primary-foreground shadow-lg transition-transform hover:-translate-y-1 sm:inline-flex print:hidden"
+        data-testid="link-emergency-supplies"
+      >
+        <Cross size={16} /> Send supplies too
+      </Link>
+    )}
   </div>;
 }
 
@@ -171,7 +190,16 @@ function Footer() {
 
 function Landing() {
   const { data: islands, isLoading, isError, refetch } = useListIslands({ query: { queryKey: getListIslandsQueryKey() } });
-  const { data: summary } = useGetFleetSummary({ query: { queryKey: getGetFleetSummaryQueryKey() } });
+  const fleetParams = useMemo(() => ({}), []);
+  const { data: fleet, isLoading: isFleetLoading } = useListFleet(fleetParams, { query: { queryKey: getListFleetQueryKey(fleetParams) } });
+  const mapBoats = useMemo(
+    () => (fleet ?? []).filter(boat => (
+      boat.status !== BoatStatus.offline
+      && typeof boat.position?.lat === 'number'
+      && typeof boat.position?.lng === 'number'
+    )),
+    [fleet],
+  );
   return <AppShell><main>
 
     <section className="relative overflow-hidden bg-sidebar px-5 pb-24 pt-16 text-sidebar-foreground lg:px-8 lg:pb-32 lg:pt-24">
@@ -215,12 +243,12 @@ function Landing() {
           </div>
           <div className="rise-in-delay relative mx-auto w-full max-w-[680px] lg:ml-auto">
             <div className="relative h-[460px] overflow-hidden rounded-xl border border-sidebar-foreground/10 shadow-2xl sm:h-[560px] lg:h-[680px]">
-           <CaribbeanMap islands={islands ?? []} onIslandClick={id => { window.location.href = `${basePath || ''}/islands/${id}`; }} className="h-full min-h-full border-0" />
-          <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-sidebar/90 p-4 text-sidebar-foreground backdrop-blur-md"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">Right now</p><p className="mt-1 text-sm font-bold">{summary?.available ?? '—'} boats ready to launch</p></div><div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-sidebar"><Waves size={18} /></div></div>
+            <CaribbeanMap islands={islands ?? []} boats={mapBoats} onIslandClick={id => { window.location.href = `${basePath || ''}/islands/${id}`; }} className="h-full min-h-full border-0" />
+           <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-sidebar/90 p-4 text-sidebar-foreground backdrop-blur-md"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.18em] text-sidebar-foreground/55">Right now</p><p className="mt-1 text-sm font-bold">{isFleetLoading ? 'Loading active boats…' : `${mapBoats.length} boats active on this map`}</p></div><div className="grid h-10 w-10 place-items-center rounded-full bg-accent text-sidebar"><Waves size={18} /></div></div>
         </div></div>
       </div>
     </section>
-     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Our fleet operates across 7 Carribean islands.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
+     <section className="bg-muted px-5 py-20 lg:px-8"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-6"><div><h2 className="mt-3 font-display text-4xl font-semibold tracking-[-.04em]">Our fleet operates across 7 Caribbean islands.</h2></div><Link href="/book" className="group inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-island-book">Choose your port <ArrowRight className="transition-transform group-hover:translate-x-1" size={16} /></Link></div>
       {isLoading ? <div className="mt-10 grid gap-4 sm:grid-cols-3"><LoadingCard /><LoadingCard /><LoadingCard /></div> : isError ? <div className="mt-10"><ErrorCard retry={refetch} /></div> : <div className="mt-10 grid gap-4 sm:grid-cols-3">{(islands ?? []).map((island, i) => <IslandCard key={island.id} island={island} index={i} />)}</div>}</div></section>
     <section className="px-5 py-20 lg:px-8"><div className="mx-auto grid max-w-[1240px] items-center gap-12 rounded-[34px] bg-primary px-7 py-10 text-primary-foreground sm:px-12 lg:grid-cols-[1fr_auto] lg:py-14"><div><h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-tight tracking-[-.04em]">Response mode is always one tap away.</h2><p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/70">For a medical need, a stranded boat, or water coming in. Contact rescue-equipped boats and trained captains with the press of a button.</p></div><Link href="/emergency" className="focus-ring inline-flex items-center gap-2 rounded-full bg-destructive px-6 py-3.5 text-sm font-extrabold text-white hover:-translate-y-1" data-testid="link-home-emergency">Emergency <Siren size={18} /></Link></div></section>
     <Footer />
@@ -277,8 +305,47 @@ function FleetPage() {
 function Stat({ label, value }: { label: string; value?: number }) { return <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">{label}</p><p className="mt-1 font-display text-2xl font-semibold">{value ?? '—'}</p></div>; }
 function BoatCard({ boat }: { boat: FleetBoat }) {
   const [expanded, setExpanded] = useState(false);
-  const { data: detail, isLoading } = useGetFleetBoat(boat.id, { query: { enabled: expanded, queryKey: getGetFleetBoatQueryKey(boat.id) } });
-  return <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}><div className="relative grid h-44 place-items-center overflow-hidden bg-gradient-to-br from-sky-100 to-amber-50"><img src={`${basePath || ''}/boat.png`} alt={`${boat.name}, a ${boat.boatClass.replace('_', ' ')}`} className="h-[86%] w-[86%] object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105" loading="lazy" /><div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] shadow-sm backdrop-blur"><span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />{boat.status.replace('_', ' ')}</div></div><div className="p-5"><div className="flex items-start justify-between"><div><h3 className="font-display text-2xl font-semibold">{boat.name}</h3><p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p></div>{boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}</div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span><div><p className="text-sm font-bold">{boat.assignedDriver?.name}</p><p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p></div></div><button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`}>{expanded ? 'Hide boat details' : 'View boat details'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} /></button>{expanded && <div className="mt-3 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid={`details-boat-${boat.id}`}>{isLoading ? 'Opening the boat log…' : `${detail?.assignedDriver?.languages?.join(', ') ?? 'Local crew'} · heading ${Math.round(detail?.heading ?? boat.heading)}° · ${detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0} trips completed`}</div>}</div></article>;
+  return (
+    <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}>
+      <div className="relative grid h-44 place-items-center overflow-hidden bg-gradient-to-br from-sky-100 to-amber-50">
+        <img src={`${basePath || ''}/boat.png`} alt={`${boat.name}, a ${boat.boatClass.replace('_', ' ')}`} className="h-[86%] w-[86%] object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+        <div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] shadow-sm backdrop-blur">
+          <span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />
+          {boat.status.replace('_', ' ')}
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="font-display text-2xl font-semibold">{boat.name}</h3>
+            <p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p>
+          </div>
+          {boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}
+        </div>
+        <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span>
+          <div>
+            <p className="text-sm font-bold">{boat.assignedDriver?.name}</p>
+            <p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`} aria-expanded={expanded}>
+          {expanded ? 'Hide boat log' : 'View boat log'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} />
+        </button>
+        {expanded && (
+          <div className="mt-3 rounded-xl bg-muted p-4 text-xs text-muted-foreground" data-testid={`details-boat-${boat.id}`}>
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-primary">Verified boat log</p>
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+              <div><dt className="text-[10px] uppercase tracking-wide">Rides logged</dt><dd className="mt-1 font-bold text-foreground">{boat.assignedDriver?.tripsCompleted ?? 0}</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Current heading</dt><dd className="mt-1 font-bold text-foreground">{Math.round(boat.heading)}°</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Languages</dt><dd className="mt-1 font-bold text-foreground">{boat.assignedDriver?.languages?.join(', ') || 'Local crew'}</dd></div>
+              <div><dt className="text-[10px] uppercase tracking-wide">Qualifications</dt><dd className="mt-1 font-bold capitalize text-foreground">{boat.assignedDriver?.certifications?.length ? boat.assignedDriver.certifications.map(item => item.replace('_', ' ')).join(', ') : 'Standard operations'}</dd></div>
+            </dl>
+          </div>
+        )}
+      </div>
+    </article>
+  );
 }
 
 function EmptyCard({ title, text }: { title: string; text: string }) { return <div className="rounded-[28px] border border-dashed border-border bg-card p-12 text-center"><Binoculars className="mx-auto text-accent" size={30} /><h3 className="mt-4 font-display text-2xl">{title}</h3><p className="mt-2 text-sm text-muted-foreground">{text}</p></div>; }
@@ -348,7 +415,16 @@ function TripPage() {
   useEffect(() => { const timer = window.setInterval(() => setClock(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
   const id = getActiveTripId();
   const { data: trip, isLoading, isError, refetch } = useGetTrip(id, { query: { enabled: !!id, queryKey: getGetTripQueryKey(id) } });
-  const completeTrip = useCompleteTrip();
+  const completeTrip = useCompleteTrip({
+    mutation: {
+      onSuccess: (completedTrip) => {
+        queryClient.setQueryData(getGetTripQueryKey(completedTrip.id), completedTrip);
+        queryClient.invalidateQueries({ queryKey: getListCompletedTripsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListFleetQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetFleetSummaryQueryKey() });
+      },
+    },
+  });
   if (isLoading) return <AppShell><main className="mx-auto max-w-[1000px] px-5 py-16"><LoadingCard label="Finding your crossing" /></main></AppShell>;
   if (isError || !trip) return <AppShell><main className="mx-auto max-w-[1000px] px-5 py-16"><ErrorCard retry={refetch} message="We could not find that crossing." /></main></AppShell>;
   const done = trip.status === 'completed';
@@ -371,12 +447,10 @@ function EmergencyPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [situation, setSituation] = useState<EmergencySituation>(EmergencySituation.stranded);
   const [notes, setNotes] = useState('');
-  const [locating, setLocating] = useState(false);
   const [position, setPosition] = useState({ lat: 18.02, lng: -62.95 });
-  const locate = () => { setLocating(true); navigator.geolocation?.getCurrentPosition(p => { setPosition({ lat: p.coords.latitude, lng: p.coords.longitude }); setLocating(false); }, () => setLocating(false)); };
   const dispatch = () => createEmergency.mutate({ data: { situation, position, notes, tripId: null } }, { onSuccess: incident => { queryClient.invalidateQueries({ queryKey: getGetEmergencyQueryKey(incident.id) }); setLocation(`/emergency/${incident.id}`); } });
-  return <AppShell emergency><main className="mx-auto max-w-[1000px] px-5 py-12 lg:px-8 lg:py-16"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><ModePill emergency /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-destructive">Coastwatch dispatch</p><h1 className="mt-4 font-display text-5xl font-semibold leading-[.93] tracking-[-.05em] sm:text-6xl">Keep calm.<br />We know this water.</h1><p className="mt-5 max-w-sm text-sm leading-6 text-muted-foreground">Response mode is for immediate help on or near the water. Tell us what is happening, then stay where you are if it is safe.</p><div className="mt-10 flex items-start gap-3 text-sm text-foreground/70"><ShieldCheck className="mt-0.5 shrink-0 text-primary" size={18} /><span>Our dispatch team receives your location and sends the nearest rescue-equipped boat.</span></div></div>
-       <div className="rounded-[30px] border border-destructive/20 bg-card p-6 shadow-lg sm:p-9">{!confirmed ? <><div className="flex items-center justify-between"><h2 className="font-display text-3xl font-semibold">What is happening?</h2><Radio className="text-destructive" size={23} /></div><p className="mt-2 text-sm text-muted-foreground">Pick the closest description.</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{([{ value: EmergencySituation.stranded, label: 'Stranded or adrift', icon: Anchor }, { value: EmergencySituation.medical, label: 'Medical need', icon: HeartHandshake }, { value: EmergencySituation.taking_on_water, label: 'Taking on water', icon: Waves }, { value: EmergencySituation.other, label: 'Something else', icon: CircleAlert }] as const).map(item => { const Icon = item.icon; return <button type="button" key={item.value} onClick={() => setSituation(item.value)} className={`focus-ring flex items-center gap-3 rounded-2xl border p-4 text-left text-sm font-bold transition-colors ${situation === item.value ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border hover:bg-muted'}`} data-testid={`button-situation-${item.value}`}><Icon size={19} />{item.label}{situation === item.value && <Check className="ml-auto" size={16} />}</button>; })}</div><label className="mt-7 grid gap-2 text-sm font-bold">Notes for the captain <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="What should the crew know?" className="focus-ring resize-none rounded-2xl border border-border bg-background px-4 py-3 font-normal" data-testid="input-emergency-notes" /></label><div className="mt-5 flex items-center justify-between rounded-2xl bg-muted p-4"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"><Crosshair size={17} /></span><div><p className="text-xs font-bold">Your location</p><p className="font-mono-ui text-[10px] text-muted-foreground">{position.lat.toFixed(4)}, {position.lng.toFixed(4)}</p></div></div><button type="button" onClick={locate} className="inline-flex min-h-11 items-center px-2 text-xs font-bold text-primary underline-offset-4 hover:underline" data-testid="button-use-location">{locating ? 'Locating…' : 'Use my location'}</button></div><div className="mt-8 flex items-center justify-between gap-4"><Link href="/" className="inline-flex min-h-11 items-center px-2 text-xs font-bold text-muted-foreground" data-testid="link-cancel-emergency">Cancel</Link><Button type="button" kind="danger" onClick={() => setConfirmed(true)} data-testid="button-review-emergency">Review dispatch <ArrowRight size={16} /></Button></div></> : <><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-destructive text-white"><LifeBuoy size={30} /></div><h2 className="mt-6 text-center font-display text-3xl font-semibold">Ready to send for help?</h2><p className="mx-auto mt-3 max-w-sm text-center text-sm leading-6 text-muted-foreground">We will send the nearest rescue-equipped boat to your location. Keep your phone visible and stay on channel.</p><div className="mt-7 divide-y divide-border rounded-2xl border border-border"><SummaryLine label="Situation" value={situation.replaceAll('_', ' ')} /><SummaryLine label="Coordinates" value={`${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`} /><SummaryLine label="Notes" value={notes || 'No additional notes'} /></div>{createEmergency.isError && <p className="mt-4 text-sm font-bold text-destructive" data-testid="status-emergency-error">{getApiErrorMessage(createEmergency.error, 'Dispatch could not be reached. Check your connection and try again.')}</p>}<div className="mt-8 flex gap-3"><Button type="button" kind="quiet" className="flex-1" onClick={() => setConfirmed(false)} data-testid="button-edit-emergency">Edit</Button><Button type="button" kind="danger" className="flex-1" onClick={dispatch} disabled={createEmergency.isPending} data-testid="button-send-emergency">{createEmergency.isPending ? 'Calling rescue…' : 'Send for help'} <Radio size={16} /></Button></div></>}</div></div></main></AppShell>;
+  return <AppShell emergency><main className="mx-auto max-w-[1000px] px-5 py-12 lg:px-8 lg:py-16"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><ModePill emergency /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-destructive">Coastwatch dispatch</p><h1 className="mt-4 font-display text-5xl font-semibold leading-[.93] tracking-[-.05em] sm:text-6xl">Keep calm.<br />We know this water.</h1><p className="mt-5 max-w-sm text-sm leading-6 text-muted-foreground">Response mode is for immediate help on or near the water. Tell us what is happening, then stay where you are if it is safe.</p><div className="mt-10 flex items-start gap-3 text-sm text-foreground/70"><ShieldCheck className="mt-0.5 shrink-0 text-primary" size={18} /><span>Our dispatch team sends the nearest rescue-equipped boat to the dispatch point on this call.</span></div></div>
+        <div className="rounded-[30px] border border-destructive/20 bg-card p-6 shadow-lg sm:p-9">{!confirmed ? <><div className="flex items-center justify-between"><h2 className="font-display text-3xl font-semibold">What is happening?</h2><Radio className="text-destructive" size={23} /></div><p className="mt-2 text-sm text-muted-foreground">Pick the closest description.</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{([{ value: EmergencySituation.stranded, label: 'Stranded or adrift', icon: Anchor }, { value: EmergencySituation.medical, label: 'Medical need', icon: HeartHandshake }, { value: EmergencySituation.taking_on_water, label: 'Taking on water', icon: Waves }, { value: EmergencySituation.other, label: 'Something else', icon: CircleAlert }] as const).map(item => { const Icon = item.icon; return <button type="button" key={item.value} onClick={() => setSituation(item.value)} className={`focus-ring flex items-center gap-3 rounded-2xl border p-4 text-left text-sm font-bold transition-colors ${situation === item.value ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border hover:bg-muted'}`} data-testid={`button-situation-${item.value}`}><Icon size={19} />{item.label}{situation === item.value && <Check className="ml-auto" size={16} />}</button>; })}</div><label className="mt-7 grid gap-2 text-sm font-bold">Notes for the captain <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="What should the crew know?" className="focus-ring resize-none rounded-2xl border border-border bg-background px-4 py-3 font-normal" data-testid="input-emergency-notes" /></label><div className="mt-5 flex items-center justify-between rounded-2xl bg-muted p-4"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground"><Crosshair size={17} /></span><div><p className="text-xs font-bold">Dispatch point</p><p className="font-mono-ui text-[10px] text-muted-foreground">{position.lat.toFixed(4)}, {position.lng.toFixed(4)}</p></div></div><span className="text-right text-[10px] font-bold uppercase tracking-[.12em] text-muted-foreground">Manual dispatch record</span></div><div className="mt-8 flex items-center justify-between gap-4"><Link href="/" className="inline-flex min-h-11 items-center px-2 text-xs font-bold text-muted-foreground" data-testid="link-cancel-emergency">Cancel</Link><Button type="button" kind="danger" onClick={() => setConfirmed(true)} data-testid="button-review-emergency">Review dispatch <ArrowRight size={16} /></Button></div></> : <><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-destructive text-white"><LifeBuoy size={30} /></div><h2 className="mt-6 text-center font-display text-3xl font-semibold">Ready to send for help?</h2><p className="mx-auto mt-3 max-w-sm text-center text-sm leading-6 text-muted-foreground">We will send the nearest rescue-equipped boat to the dispatch point on this call. Keep your phone visible and stay on channel.</p><div className="mt-7 divide-y divide-border rounded-2xl border border-border"><SummaryLine label="Situation" value={situation.replaceAll('_', ' ')} /><SummaryLine label="Coordinates" value={`${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`} /><SummaryLine label="Notes" value={notes || 'No additional notes'} /></div>{createEmergency.isError && <p className="mt-4 text-sm font-bold text-destructive" data-testid="status-emergency-error">{getApiErrorMessage(createEmergency.error, 'Dispatch could not be reached. Check your connection and try again.')}</p>}<div className="mt-8 flex gap-3"><Button type="button" kind="quiet" className="flex-1" onClick={() => setConfirmed(false)} data-testid="button-edit-emergency">Edit</Button><Button type="button" kind="danger" className="flex-1" onClick={dispatch} disabled={createEmergency.isPending} data-testid="button-send-emergency">{createEmergency.isPending ? 'Calling rescue…' : 'Send for help'} <Radio size={16} /></Button></div></>}</div></div></main></AppShell>;
 }
 
 function EmergencyTrackingPage() {
@@ -386,14 +460,88 @@ function EmergencyTrackingPage() {
   if (isLoading) return <AppShell emergency><main className="mx-auto max-w-[1000px] px-5 py-16"><LoadingCard label="Connecting to coastwatch" /></main></AppShell>;
   if (isError || !incident) return <AppShell emergency><main className="mx-auto max-w-[1000px] px-5 py-16"><ErrorCard retry={refetch} message="We could not locate that response call." /></main></AppShell>;
   const resolved = incident.status === 'resolved';
-   return <AppShell emergency><main className="mx-auto max-w-[1180px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-5"><div><ModePill emergency /><p className="mt-7 font-mono-ui text-[10px] uppercase tracking-[.2em] text-destructive">Response call {incident.id.slice(0, 8)}</p><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{resolved ? 'Response complete.' : 'Help is moving.'}</h1><p className="mt-4 text-sm text-muted-foreground">{resolved ? 'The incident has been safely resolved.' : `Rescue boat ETA: ${incident.etaMinutes} minutes.`}</p></div><div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[.16em] text-destructive" data-testid="status-emergency"><span className="pulse-ring absolute h-5 w-5 rounded-full bg-destructive/30" /><span className="relative h-2 w-2 rounded-full bg-destructive" />{incident.status.replace('_', ' ')}</div></div><div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[520px] overflow-hidden rounded-[30px] border border-destructive/15 sm:min-h-[640px]"><div className="absolute left-[18%] top-[16%] h-36 w-48 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[13%] h-32 w-44 rotate-12 rounded-[42%] bg-[#d4ae6f] island-shape" /><div className="absolute left-[40%] top-[43%] grid h-12 w-12 place-items-center rounded-full bg-destructive text-white shadow-xl"><LifeBuoy size={24} /></div><div className="absolute right-[28%] bottom-[25%] h-24 w-36 rotate-12"><img src={`${basePath || ''}/boat.png`} alt={`${incident.rescueBoat?.name ?? 'Rescue boat'} on response`} className="h-full w-full object-contain drop-shadow-xl" /></div><div className="absolute left-[45%] top-[48%] h-24 w-[25%] border-t-2 border-dashed border-destructive/70 rotate-[15deg]" /><div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-card/90 p-4 backdrop-blur"><div><p className="text-sm font-bold">{incident.rescueBoat?.name}</p><p className="mt-1 text-xs text-muted-foreground">Captain {incident.rescueBoat?.assignedDriver?.name} · rescue equipped</p></div><a href="tel:+18005550116" className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground" data-testid="link-call-coastwatch" aria-label="Call coastwatch"><Phone size={17} /></a></div></div><div className="rounded-[30px] border border-border bg-card p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-destructive">Dispatch details</p><div className="mt-6 grid gap-5"><SummaryLine label="Situation" value={incident.situation.replaceAll('_', ' ')} /><SummaryLine label="Distance" value={`${incident.distanceKm} km away`} /><SummaryLine label="Notes" value={incident.notes || 'No additional notes'} /></div>{!resolved ? <Button kind="danger" className="mt-6 w-full" onClick={() => resolve.mutate({ emergencyId: incident.id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEmergencyQueryKey(incident.id) }) })} disabled={resolve.isPending} data-testid="button-resolve-emergency">{resolve.isPending ? 'Updating coastwatch…' : 'Mark response resolved'} <Check size={16} /></Button> : <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 p-4 text-sm font-bold text-primary" data-testid="status-emergency-resolved"><CircleCheck size={19} /> Coastwatch has closed this call</div>}</div></div></main></AppShell>;
+   return <AppShell emergency><main className="mx-auto max-w-[1180px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-5"><div><ModePill emergency /><p className="mt-7 font-mono-ui text-[10px] uppercase tracking-[.2em] text-destructive">Response call {incident.id.slice(0, 8)}</p><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{resolved ? 'Response complete.' : 'Help is coming.'}</h1><p className="mt-4 text-sm text-muted-foreground">{resolved ? 'The incident has been safely resolved.' : `Rescue boat ETA: ${incident.etaMinutes} minutes.`}</p></div><div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 font-mono-ui text-[10px] uppercase tracking-[.16em] text-destructive" data-testid="status-emergency"><span className="pulse-ring absolute h-5 w-5 rounded-full bg-destructive/30" /><span className="relative h-2 w-2 rounded-full bg-destructive" />{incident.status.replace('_', ' ')}</div></div><div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[520px] overflow-hidden rounded-[30px] border border-destructive/15 sm:min-h-[640px]"><div className="absolute left-[18%] top-[16%] h-36 w-48 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[13%] h-32 w-44 rotate-12 rounded-[42%] bg-[#d4ae6f] island-shape" /><div className="absolute left-[40%] top-[43%] grid h-12 w-12 place-items-center rounded-full bg-destructive text-white shadow-xl"><LifeBuoy size={24} /></div><div className="absolute right-[28%] bottom-[25%] h-24 w-36 rotate-12"><img src={`${basePath || ''}/boat.png`} alt={`${incident.rescueBoat?.name ?? 'Rescue boat'} on response`} className="h-full w-full object-contain drop-shadow-xl" /></div><div className="absolute left-[45%] top-[48%] h-24 w-[25%] border-t-2 border-dashed border-destructive/70 rotate-[15deg]" /><div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-2xl bg-card/90 p-4 backdrop-blur"><div><p className="text-sm font-bold">{incident.rescueBoat?.name}</p><p className="mt-1 text-xs text-muted-foreground">Captain {incident.rescueBoat?.assignedDriver?.name} · rescue equipped</p></div><a href="tel:+18005550116" className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground" data-testid="link-call-coastwatch" aria-label="Call coastwatch"><Phone size={17} /></a></div></div><div className="rounded-[30px] border border-border bg-card p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-destructive">Dispatch details</p><div className="mt-6 grid gap-5"><SummaryLine label="Situation" value={incident.situation.replaceAll('_', ' ')} /><SummaryLine label="Distance" value={`${incident.distanceKm} km away`} /><SummaryLine label="Notes" value={incident.notes || 'No additional notes'} /></div>{!resolved ? <Button kind="danger" className="mt-6 w-full" onClick={() => resolve.mutate({ emergencyId: incident.id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEmergencyQueryKey(incident.id) }) })} disabled={resolve.isPending} data-testid="button-resolve-emergency">{resolve.isPending ? 'Updating coastwatch…' : 'Mark response resolved'} <Check size={16} /></Button> : <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 p-4 text-sm font-bold text-primary" data-testid="status-emergency-resolved"><CircleCheck size={19} /> Coastwatch has closed this call</div>}</div></div></main></AppShell>;
 }
 
 function ProfilePage() {
   const { user, loaded: isLoaded, signedIn } = useAuthUi();
+  const { data: completedTrips = [], isLoading: tripsLoading, isError: tripsError, refetch: refetchTrips } = useListCompletedTrips({
+    query: { enabled: signedIn, queryKey: getListCompletedTripsQueryKey() },
+  });
+  const { data: islands = [] } = useListIslands({
+    query: { enabled: signedIn, queryKey: getListIslandsQueryKey() },
+  });
+  const islandNames = new Map(islands.map((island) => [island.id, island.name]));
   if (!isLoaded) return <AppShell><main className="mx-auto max-w-[900px] px-5 py-16"><LoadingCard label="Opening your logbook" /></main></AppShell>;
   if (!signedIn) return <AppShell><main className="mx-auto max-w-[760px] px-5 py-16 lg:px-8"><div className="rounded-[32px] border border-border bg-card p-8 text-center shadow-sm sm:p-12"><div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-secondary text-primary"><BookOpen size={25} /></div><h1 className="mt-6 font-display text-4xl font-semibold tracking-[-.04em]">Your logbook is waiting.</h1><p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-muted-foreground">Sign in to keep your crossings, captains, and favourite docks in one place.</p><div className="mt-8 flex justify-center gap-3"><Link href="/sign-in" className="rounded-full border border-border px-5 py-3 text-sm font-bold" data-testid="link-profile-sign-in">Sign in</Link><Link href="/sign-up" className="rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" data-testid="link-profile-sign-up">Create account</Link></div></div></main></AppShell>;
-  return <AppShell><main className="mx-auto max-w-[1000px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-end justify-between gap-5"><div><ModePill /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Your logbook</p><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{user?.firstName ? `Hello, ${user.firstName}.` : 'Your crossings.'}</h1><p className="mt-4 text-sm text-muted-foreground">The useful bits, kept close.</p></div><Link href="/book" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" data-testid="link-profile-book">Plan a crossing <ArrowRight size={16} /></Link></div><div className="mt-10 grid gap-5 md:grid-cols-[.8fr_1.2fr]"><div className="rounded-[28px] bg-sidebar p-6 text-sidebar-foreground"><div className="flex items-center gap-4"><span className="grid h-16 w-16 place-items-center rounded-full bg-secondary text-xl font-extrabold text-sidebar">{user?.firstName?.[0] ?? 'C'}</span><div><h2 className="font-display text-2xl">{user?.fullName ?? 'Island traveller'}</h2><p className="mt-1 text-sm text-sidebar-foreground/60">{user?.primaryEmailAddress?.emailAddress ?? 'Your email on file'}</p></div></div><div className="mt-10 grid grid-cols-2 gap-4 border-t border-sidebar-border pt-5"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/50">Crossings</p><p className="mt-1 font-display text-3xl">0</p></div><div><p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/50">Home dock</p><p className="mt-1 font-display text-xl">—</p></div></div></div><div className="rounded-[28px] border border-border bg-card p-7"><div className="flex items-center justify-between"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Recent activity</p><h2 className="mt-2 font-display text-2xl">Nothing logged yet.</h2></div><BookOpen className="text-accent" size={26} /></div><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">Your completed crossings will appear here with the captain, route, and fare.</p><Link href="/book" className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-profile-empty-book">Make your first crossing <ArrowRight size={16} /></Link></div></div></main></AppShell>;
+  return (
+    <AppShell>
+      <main className="mx-auto max-w-[1080px] px-5 py-12 lg:px-8 lg:py-16">
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <ModePill />
+            <p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Your logbook</p>
+            <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{user?.firstName ? `Hello, ${user.firstName}.` : 'Your crossings.'}</h1>
+            <p className="mt-4 text-sm text-muted-foreground">Every completed ride is recorded here as soon as you close it.</p>
+          </div>
+          <Link href="/book" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" data-testid="link-profile-book">Plan a crossing <ArrowRight size={16} /></Link>
+        </div>
+        <div className="mt-10 grid gap-5 md:grid-cols-[.7fr_1.3fr]">
+          <aside className="h-fit rounded-[28px] bg-sidebar p-6 text-sidebar-foreground">
+            <div className="flex items-center gap-4">
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-secondary text-xl font-extrabold text-sidebar">{user?.firstName?.[0] ?? 'C'}</span>
+              <div>
+                <h2 className="font-display text-2xl">{user?.fullName ?? 'Island traveller'}</h2>
+                <p className="mt-1 text-sm text-sidebar-foreground/60">{user?.primaryEmailAddress?.emailAddress ?? 'Your email on file'}</p>
+              </div>
+            </div>
+            <div className="mt-10 grid grid-cols-2 gap-4 border-t border-sidebar-border pt-5">
+              <div><p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/50">Completed rides</p><p className="mt-1 font-display text-3xl" data-testid="completed-trip-count">{completedTrips.length}</p></div>
+              <div><p className="font-mono-ui text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/50">Log status</p><p className="mt-2 text-sm font-bold text-secondary">{tripsError ? 'Needs retry' : 'Up to date'}</p></div>
+            </div>
+          </aside>
+          <section className="rounded-[28px] border border-border bg-card p-6 sm:p-7" aria-labelledby="completed-rides-heading">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Completed ride log</p>
+                <h2 id="completed-rides-heading" className="mt-2 font-display text-2xl">{completedTrips.length ? `${completedTrips.length} ride${completedTrips.length === 1 ? '' : 's'} logged.` : 'Nothing logged yet.'}</h2>
+              </div>
+              <BookOpen className="text-accent" size={26} />
+            </div>
+            {tripsLoading ? (
+              <div className="mt-6 rounded-2xl bg-muted p-5 text-sm font-bold text-muted-foreground" role="status">Opening completed rides…</div>
+            ) : tripsError ? (
+              <div className="mt-6 rounded-2xl bg-destructive/10 p-5">
+                <p className="text-sm font-bold text-destructive">The completed ride log could not be opened.</p>
+                <Button type="button" kind="quiet" className="mt-4" onClick={() => refetchTrips()} data-testid="button-retry-trip-log">Try again</Button>
+              </div>
+            ) : completedTrips.length ? (
+              <div className="mt-6 grid gap-3" data-testid="completed-trip-log">
+                {completedTrips.map((trip) => (
+                  <article key={trip.id} className="rounded-2xl border border-border bg-background p-4" data-testid={`completed-trip-${trip.id}`}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-extrabold">{islandNames.get(trip.pickupIslandId) ?? trip.pickupIslandId} → {islandNames.get(trip.destinationIslandId) ?? trip.destinationIslandId}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{trip.boat.name} · Captain {trip.boat.assignedDriver.name}</p>
+                      </div>
+                      <span className="rounded-full bg-accent/15 px-3 py-1 font-mono-ui text-[9px] uppercase tracking-[.12em] text-primary">Completed</span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-3 text-xs">
+                      <div><p className="text-muted-foreground">Ride</p><p className="mt-1 font-bold">{trip.id.slice(0, 12)}</p></div>
+                      <div><p className="text-muted-foreground">Passengers</p><p className="mt-1 font-bold">{trip.passengerCount}</p></div>
+                      <div><p className="text-muted-foreground">Fare</p><p className="mt-1 font-bold">${trip.price.toFixed(2)}</p></div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">Use “Mark ride complete” on an active crossing and it will appear here immediately.</p><Link href="/book" className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-profile-empty-book">Make your first crossing <ArrowRight size={16} /></Link></>
+            )}
+          </section>
+        </div>
+      </main>
+    </AppShell>
+  );
 }
 
 function AuthPage({ mode }: { mode: 'sign-in' | 'sign-up' }) {

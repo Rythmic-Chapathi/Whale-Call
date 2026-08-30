@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   CompleteTripParams,
@@ -7,6 +7,7 @@ import {
   CreateTripResponse,
   GetTripParams,
   GetTripResponse,
+  ListCompletedTripsResponse,
 } from "@workspace/api-zod";
 import {
   boatsTable,
@@ -46,6 +47,19 @@ async function getApiTrip(tripId: string) {
     targetArrivalAt: trip.targetArrivalAt,
   };
 }
+
+router.get("/trips", async (req, res): Promise<void> => {
+  const rows = await db
+    .select({ id: tripsTable.id })
+    .from(tripsTable)
+    .where(eq(tripsTable.status, "completed"))
+    .orderBy(desc(tripsTable.requestedAt));
+  const trips = (await Promise.all(rows.map((row) => getApiTrip(row.id)))).filter(
+    (trip): trip is NonNullable<Awaited<ReturnType<typeof getApiTrip>>> => Boolean(trip),
+  );
+  req.log.info({ event: "completed_trip_log_read", count: trips.length }, "completed trip log read");
+  res.json(ListCompletedTripsResponse.parse(trips));
+});
 
 router.post("/trips", async (req, res): Promise<void> => {
   const parsed = CreateTripBody.safeParse(req.body);
@@ -173,15 +187,36 @@ router.post("/trips/:tripId/complete", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Trip not found" });
     return;
   }
-  await db
-    .update(tripsTable)
-    .set({ status: "completed" })
-    .where(eq(tripsTable.id, trip.id));
-  await db
-    .update(boatsTable)
-    .set({ status: "available" })
-    .where(eq(boatsTable.id, trip.boatId));
+  if (trip.status === "completed") {
+    const data = await getApiTrip(trip.id);
+    req.log.info(
+      { event: "trip_completion_replayed", tripId: trip.id },
+      "completed ride returned without writing a duplicate log entry",
+    );
+    res.json(CompleteTripResponse.parse(data));
+    return;
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .update(tripsTable)
+      .set({ status: "completed" })
+      .where(eq(tripsTable.id, trip.id));
+    await tx
+      .update(boatsTable)
+      .set({ status: "available" })
+      .where(eq(boatsTable.id, trip.boatId));
+  });
   const data = await getApiTrip(trip.id);
+  req.log.info(
+    {
+      event: "trip_completed",
+      tripId: trip.id,
+      boatId: trip.boatId,
+      boatClass: trip.boatClass,
+      passengerCount: trip.passengerCount,
+    },
+    "ride marked complete and written to the trip log",
+  );
   res.json(CompleteTripResponse.parse(data));
 });
 

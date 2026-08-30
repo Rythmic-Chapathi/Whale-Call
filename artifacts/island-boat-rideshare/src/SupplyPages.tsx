@@ -102,7 +102,7 @@ export function SupplyRequestPage() {
     setValidation('');
     if (step === 1 && !lines.length) return setValidation('Choose at least one thing for the boat to carry.');
     if (step === 1 && requiredBoat === 'split run') return setValidation('That load is over 1,800 kg. Reduce it so one boat can carry it safely.');
-    if (step === 2 && !destination) return setValidation('Choose a dock or use your current coordinates.');
+    if (step === 2 && !destination) return setValidation('Choose a dock or enter manual coordinates.');
     setStep(Math.min(3, step + 1));
   };
   const submit = (event: FormEvent) => {
@@ -158,8 +158,8 @@ export function SupplyRequestPage() {
         </>}
         {step === 2 && <>
           <h2 className="font-display text-3xl font-semibold">Where should we land it?</h2>
-          <p className="mt-2 text-sm text-muted-foreground">A dock is easiest, but coordinates work when the road stops.</p>
-          <label className="mt-7 flex min-h-11 items-center gap-3 rounded-2xl border border-border p-4 text-sm font-bold"><input type="checkbox" checked={coordinates} onChange={event => setCoordinates(event.target.checked)} className="h-5 w-5 accent-amber-600" />Deliver to my coordinates</label>
+           <p className="mt-2 text-sm text-muted-foreground">A dock is easiest, but you can enter a landing point manually.</p>
+           <label className="mt-7 flex min-h-11 items-center gap-3 rounded-2xl border border-border p-4 text-sm font-bold"><input type="checkbox" checked={coordinates} onChange={event => setCoordinates(event.target.checked)} className="h-5 w-5 accent-amber-600" />Enter manual coordinates</label>
           {!coordinates ? <div className="mt-5 grid gap-4">
             <label className="grid gap-2 text-sm font-bold">Island<select value={islandId} onChange={event => { setIslandId(event.target.value); setDockId(''); }} className="focus-ring min-h-11 rounded-2xl border border-border bg-background px-4"><option value="">Select an island</option>{(islands ?? []).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select></label>
             <label className="grid gap-2 text-sm font-bold">Dock<select value={dockId} onChange={event => setDockId(event.target.value)} disabled={!island} className="focus-ring min-h-11 rounded-2xl border border-border bg-background px-4 disabled:opacity-50"><option value="">Select a dock</option>{(island?.docks ?? []).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select></label>

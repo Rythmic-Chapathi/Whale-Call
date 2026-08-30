@@ -159,6 +159,53 @@ export const GetFleetBoatResponse = zod.object({
 
 
 /**
+ * @summary List all completed rides in the trip log
+ */
+export const ListCompletedTripsResponseItem = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['matching', 'assigned', 'arriving', 'arrived', 'in_transit', 'completed']),
+  "pickupIslandId": zod.string(),
+  "pickupDockId": zod.string(),
+  "destinationIslandId": zod.string(),
+  "destinationDockId": zod.string(),
+  "boatClass": zod.string(),
+  "passengerCount": zod.int(),
+  "boat": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "boatClass": zod.enum(['water_taxi', 'cruiser', 'catamaran', 'speedboat', 'rescue']),
+  "capacity": zod.int(),
+  "position": zod.object({
+  "lat": zod.number(),
+  "lng": zod.number()
+}),
+  "heading": zod.number(),
+  "status": zod.enum(['available', 'en_route', 'on_trip', 'offline']),
+  "assignedDriver": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "rating": zod.number(),
+  "tripsCompleted": zod.int(),
+  "yearsActive": zod.int(),
+  "languages": zod.array(zod.string()),
+  "certifications": zod.array(zod.enum(['medical', 'tow', 'night_ops']))
+}),
+  "homeIslandId": zod.string(),
+  "emergencyEquipped": zod.boolean(),
+  "payloadKg": zod.number(),
+  "refrigerated": zod.boolean()
+}),
+  "price": zod.number(),
+  "etaMinutes": zod.int(),
+  "distanceKm": zod.number(),
+  "requestedAt": zod.coerce.date(),
+  "targetArrivalAt": zod.coerce.date()
+})
+export const ListCompletedTripsResponse = zod.array(ListCompletedTripsResponseItem)
+
+
+/**
  * @summary Request a standard boat ride
  */
 export const createTripBodyPassengerCountMax = 16;

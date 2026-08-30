@@ -545,6 +545,83 @@ export function useGetFleetBoat<TData = Awaited<ReturnType<typeof getFleetBoat>>
 
 
 
+export const getListCompletedTripsUrl = () => {
+
+
+
+
+  return `/api/trips`
+}
+
+/**
+ * @summary List all completed rides in the trip log
+ */
+export const listCompletedTrips = async ( options?: Parameters<typeof customFetch>[1]): Promise<Trip[]> => {
+
+  return customFetch<Trip[]>(getListCompletedTripsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCompletedTripsQueryKey = () => {
+    return [
+    `/api/trips`
+    ] as const;
+    }
+
+
+export const getListCompletedTripsQueryOptions = <TData = Awaited<ReturnType<typeof listCompletedTrips>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCompletedTrips>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCompletedTripsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCompletedTrips>>> = ({ signal }) => listCompletedTrips({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCompletedTrips>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCompletedTripsQueryResult = NonNullable<Awaited<ReturnType<typeof listCompletedTrips>>>
+export type ListCompletedTripsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all completed rides in the trip log
+ */
+
+export function useListCompletedTrips<TData = Awaited<ReturnType<typeof listCompletedTrips>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCompletedTrips>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCompletedTripsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getCreateTripUrl = () => {
 
 

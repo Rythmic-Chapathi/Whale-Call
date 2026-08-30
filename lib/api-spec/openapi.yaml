@@ -139,6 +139,19 @@ paths:
         "404":
           description: Boat not found
   /trips:
+    get:
+      operationId: listCompletedTrips
+      tags: [trips]
+      summary: List all completed rides in the trip log
+      responses:
+        "200":
+          description: Completed trip log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trip"
     post:
       operationId: createTrip
       tags: [trips]
