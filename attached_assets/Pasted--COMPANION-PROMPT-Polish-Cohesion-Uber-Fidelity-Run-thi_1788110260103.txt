@@ -1,0 +1,270 @@
+# COMPANION PROMPT — Polish, Cohesion & Uber Fidelity
+
+Run this **after** the master build prompt is implemented, or alongside it if you're
+building fresh. This prompt is about making the app feel like one product built by one
+team, and making the ride experience feel genuinely like Uber rather than
+Uber-shaped.
+
+Everything here overrides looser guidance in the master prompt.
+
+---
+
+## 1. Token system — no hardcoded values, anywhere
+
+Every color, space, radius, shadow, duration, and font size comes from a token. If a
+component contains a raw hex code, a raw pixel value, or a one-off duration, that is a
+bug.
+
+### Voyage palette (Mode A)
+
+```
+--water-deep      #0B4F6C   deep ocean, primary dark surfaces
+--water           #14919B   mid ocean, primary brand
+--water-light     #45B7C4   shallows, hover states
+--water-pale      #A8E0E6   foam, subtle fills
+--sand            #F4E4C1   primary light surface
+--sand-warm       #E8D5A8   secondary surface, card backgrounds
+--parchment       #FAF3E3   page background, map paper
+--coral           #FF6B5A   primary CTA, accent
+--coral-dark      #E04E3D   CTA pressed
+--palm            #2D6A4F   success, available status
+--palm-light      #52B788   available boat markers
+--driftwood       #8B6F47   map outlines, borders
+--ink             #1A2B34   primary text
+--ink-muted       #5A6B74   secondary text
+--ink-faint       #92A0A8   tertiary text, disabled
+```
+
+### Response palette (Mode B)
+
+```
+--response-bg      #0A0E12   near-black background
+--response-surface #161C23   elevated surfaces
+--response-line    #2A343D   borders, dividers
+--urgent           #FF3B30   the single accent — CTAs, active status
+--urgent-dim       #C62B22   pressed
+--response-text    #FFFFFF   primary text
+--response-muted   #9BA8B4   secondary text
+--response-ok      #34C759   confirmed/resolved only
+```
+
+Mode B uses **exactly one** accent color. Do not introduce a second. The restraint is
+the point.
+
+### Semantic layer
+
+Components reference semantic tokens, never palette tokens directly:
+
+```
+--bg-page, --bg-surface, --bg-elevated
+--text-primary, --text-secondary, --text-tertiary
+--action-primary, --action-primary-pressed, --action-secondary
+--status-available, --status-busy, --status-offline, --status-urgent
+--border-subtle, --border-strong
+```
+
+Mode switching remaps the semantic layer to the other palette. One state change, zero
+component changes. If switching modes requires touching a component file, the
+architecture is wrong — fix it.
+
+### Scales
+
+```
+space:   4 8 12 16 20 24 32 40 48 64        (nothing between these)
+radius:  6 (inputs) 12 (cards) 20 (sheets) 999 (pills)
+type:    12 14 16 18 20 24 32 40            (line height 1.4 body, 1.15 headings)
+weight:  400 body / 500 emphasis / 600 headings / 700 numerals & CTAs
+shadow:  sm  0 1px 2px rgba(26,43,52,.08)
+         md  0 4px 12px rgba(26,43,52,.10)
+         lg  0 12px 32px rgba(26,43,52,.14)
+         sheet 0 -8px 32px rgba(26,43,52,.16)
+```
+
+**Enforcement:** after implementing, grep the codebase for hex codes, `rgb(`, and
+pixel values outside the token definition files. Report every hit. Zero is the target.
+
+---
+
+## 2. What actually makes it feel like Uber
+
+Uber's feel comes from interaction architecture, not visual design. Implement these
+specifically.
+
+### The sheet is the app
+
+- Map is a **persistent full-bleed background layer**. It never unmounts, never gets
+  replaced by a new page. Every ride state is a bottom sheet over the same map.
+- Sheet has **snap points**: peek (~15% — just a handle and one line), half (~45% —
+  primary content), full (~85% — details and actions).
+- Sheet is drag-dismissible between snap points with velocity-aware snapping.
+- Sheet content changes **within the same sheet** as trip state advances. It does not
+  unmount and remount. Cross-fade content, animate height.
+- **The sheet grows as the trip progresses.** Booking = half. Matching = peek (get out
+  of the way, let them watch the map). Driver assigned = half. Arrived = full.
+
+### Map camera behavior
+
+- Auto-fit bounds when pickup and destination are both set — with padding that accounts
+  for the sheet height so nothing hides behind it.
+- Follow-cam during matching and en-route: keep the assigned boat and pickup point both
+  in frame, recentering smoothly as the boat moves.
+- Recenter button appears the moment the user pans manually, disappears when they
+  return.
+- On arrival, animate camera to pickup point at closer zoom.
+- All camera moves are animated over 400–600ms. Never jump-cut.
+
+### Markers move, they don't teleport
+
+- Position updates arrive discretely. **Interpolate between them.** A boat should slide
+  along its heading, not blink to a new coordinate.
+- Rotate the icon smoothly toward the new heading — don't snap the rotation either.
+- Available boats in idle browse state drift slightly. A map of perfectly static boats
+  reads as fake.
+
+### One decision per screen
+
+Uber never asks two questions at once. Enforce this: pickup, then destination, then
+class, then confirm. Each is its own sheet state with one primary action. Resist the
+urge to combine steps to "save taps."
+
+### Loading is never a spinner
+
+- Skeleton screens matching the shape of incoming content.
+- **Optimistic UI**: when the user taps request, the UI advances immediately and
+  reconciles after. Never make them watch a loader to find out if their tap registered.
+- Matching state is animated and informative — pulsing radius on the map, "Finding your
+  boat" with rotating status lines. It should feel like something is happening, not
+  like the app hung.
+
+### Driver card anatomy
+
+Fixed structure, every time:
+- Avatar (56px, circular) | name + rating on one line | boat name + class beneath
+- Boat identifier prominent — the user has to find this boat at a dock
+- Contact actions as icon buttons, right-aligned
+- Trip progress and ETA as a distinct row beneath
+
+### Persistent trip bar
+
+If a trip is active and the user navigates away, a **persistent bar pins to the bottom
+of every screen** with boat, ETA, and one tap to return to the trip. Uber does this;
+it's what makes the app feel like it's tracking something real. Do not skip it.
+
+### Haptics
+
+- Light: sheet snap, selection change
+- Medium: booking confirmed, boat assigned
+- Heavy: arrival, emergency dispatch confirmed
+
+### Numbers
+
+ETAs, prices, distances, ratings — tabular figures, weight 700, one size step larger
+than surrounding text. Uber makes numbers the loudest thing on the screen. Match that.
+
+---
+
+## 3. Seamlessness
+
+### Motion system
+
+```
+instant   100ms  ease-out        micro-feedback, toggles
+quick     200ms  ease-out        hovers, small state changes
+standard  300ms  cubic-bezier(.4,0,.2,1)   sheets, cards, most transitions
+slow      500ms  cubic-bezier(.4,0,.2,1)   map camera, mode switch
+```
+
+Nothing animates outside these four. Respect `prefers-reduced-motion` — drop to
+instant, never remove state feedback entirely.
+
+### Mode switch (Voyage → Response)
+
+This is the highest-stakes transition in the app. It must read as the app becoming
+serious, not as a crash or a different app loading.
+
+- 500ms cross-fade on the semantic token layer. Colors shift, layout holds.
+- Map decoration (texture, terrain marks, coastline styling) fades out; geometry stays
+  in place. The user's mental map is preserved.
+- Sheet stays mounted, content cross-fades.
+- No white flash, no layout shift, no remount. Test this specifically.
+- Reverse transition on exit is the same, in reverse.
+
+### No layout jumps
+
+- Reserve space for async content — images have aspect ratios, lists have min-heights.
+- Never let a loaded state resize the container the skeleton occupied.
+- Fonts: `font-display: swap` with a metric-matched fallback so text doesn't reflow.
+
+### Shared continuity
+
+When a boat card opens into a detail view, the boat identity element persists across
+the transition rather than the whole view swapping. Same for driver avatar from
+matching → assigned.
+
+---
+
+## 4. Consistency audit
+
+Go find and fix these. Each is a specific search.
+
+- **One button component.** Every button in the app is variants of it. Find every
+  bespoke `<button>` with inline styles and replace it.
+- **One icon set.** Pick it, use it everywhere. Delete stragglers from other sets.
+- **One card component.** One sheet component. One input component.
+- **Status colors are global.** `available` is the same green in the map marker, the
+  fleet list, the boat detail card, and the driver card. Currently it probably isn't.
+- **Corner radii match.** A card, a sheet, and an input should not each have a
+  different arbitrary radius.
+- **Shadows come from the scale.** No one-off box-shadows.
+- **Spacing is on the scale.** No `padding: 13px`.
+- **Copy voice is consistent.** Pick sentence case or title case for buttons and use it
+  everywhere. Pick "boat" or "vessel" and use it everywhere. Same for
+  "ride" vs "trip" — pick one for user-facing copy.
+
+---
+
+## 5. Every screen needs four states
+
+Audit every view. Each must have:
+
+1. **Loading** — skeleton matching final layout
+2. **Empty** — illustrated, in Voyage style, with a clear action. "No boats nearby"
+   should suggest what to do, not just state a fact.
+3. **Error** — plain language, a retry action, never a raw error string
+4. **Loaded** — the real thing
+
+Emergency flow states use Mode B styling and shorter, flatter copy.
+
+---
+
+## 6. Mobile first
+
+This is a phone product. Build phone-first, adapt up.
+
+- Primary actions in thumb reach — bottom third of the screen
+- Minimum touch target 44px, 56px in Mode B
+- Safe area insets respected on the sheet and the persistent trip bar
+- Test at 375px width before anything wider
+- Map gestures never fight sheet gestures — sheet drag takes priority when the touch
+  starts on the sheet
+
+---
+
+## 7. Verification checklist
+
+Run through this and report results explicitly:
+
+- [ ] Zero hardcoded colors, spacing, radii, or durations outside token files
+- [ ] Mode switch tested — no flash, no layout shift, no remount
+- [ ] Map never unmounts across any ride state transition
+- [ ] Sheet snap points work with drag and velocity
+- [ ] Boat markers interpolate position and rotation, no teleporting
+- [ ] Camera fits bounds accounting for sheet height
+- [ ] Persistent trip bar appears on every screen during an active trip
+- [ ] Optimistic UI on ride request — no blocking loader
+- [ ] Status colors identical across map, list, detail, and driver card
+- [ ] All four states exist on every screen
+- [ ] `prefers-reduced-motion` respected
+- [ ] Tested at 375px, all primary actions in thumb reach
+- [ ] One button, one card, one sheet, one input, one icon set
+- [ ] Emergency reachable in ≤3 taps from any app state — report actual count

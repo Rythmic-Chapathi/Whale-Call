@@ -53,7 +53,12 @@ router.post("/emergencies", async (req, res): Promise<void> => {
     return;
   }
   const distanceKm = Number(haversineKm(position, rescueBoat.position).toFixed(1));
-  const etaMinutes = Math.max(2, Math.ceil(distanceKm * 18));
+  const responseSpeedKmPerHour = 42;
+  const launchMinutes = 2;
+  const etaMinutes = Math.max(
+    launchMinutes,
+    Math.ceil((distanceKm / responseSpeedKmPerHour) * 60 + launchMinutes),
+  );
   const emergencyId = `emergency-${Date.now().toString(36)}`;
   await db.transaction(async (tx) => {
     await tx
