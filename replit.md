@@ -40,6 +40,18 @@ A tropical island rideshare and emergency response app for the fictional Whale C
 
 Travellers can explore seven fictional island docks, browse a 72-boat live fleet, request a standard crossing with class-based pricing, track and complete a trip, and dispatch/resolve a rescue incident. Clerk sign-in and sign-up are themed to match Whale Call.
 
+## Project Analytics
+
+Whale Call records three privacy-safe custom events through Replit-hosted analytics. Their payloads contain no names, receipt numbers, trip IDs, or exact passenger counts. The rider tracking and receipt screen uses the identifier-free `/trip` route so its pageview and custom-event URLs do not expose a booking identifier.
+
+| Event name | Description | Dimensions |
+| --- | --- | --- |
+| `booking_created` | A standard crossing was successfully created | `boat_class`, `passenger_count_band` |
+| `crossing_completed` | A rider successfully marked the crossing complete | `boat_class`, `passenger_count_band` |
+| `receipt_printed` | A rider selected Print receipt on a completed crossing | `boat_class`, `passenger_count_band` |
+
+To enable reporting, go to **Publishing settings**, enable analytics, then publish or republish the app. The tracker is injected only for the published website; analytics calls are optional and safely ignored during development or if the tracker is unavailable.
+
 ## User preferences
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
