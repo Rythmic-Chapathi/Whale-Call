@@ -140,7 +140,7 @@ function Landing() {
               Adaptive Maritime Dispatch.
             </h1>
             <p className="mt-8 max-w-md text-base leading-7 text-sidebar-foreground/70">
-              A ride, a rescue, or the supplies an island is waiting for—called by people who know every shoal and dock.
+              Rides, supply runs, and emergency dispatch, sorted by priority need instead of who taps first.
             </p>
             <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
               <Link href="/book" className="focus-ring inline-flex items-center justify-between gap-3 rounded-[22px] bg-secondary px-5 py-4 text-sm font-extrabold text-sidebar transition-transform hover:-translate-y-1" data-testid="link-hero-book">
