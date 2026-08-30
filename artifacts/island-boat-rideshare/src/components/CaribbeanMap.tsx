@@ -15,8 +15,9 @@ type CaribbeanMapProps = {
 };
 
 function boatMarkerPng(color: string, heading: number) {
-  const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/boat.png`;
-  return `<span class="boat-marker-frame" style="--boat-status:${color};--boat-heading:${heading}deg"><img src="${src}" alt="" /></span>`;
+  const src = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/fleet/whale-call-boat.png`;
+  const safeHeading = Number.isFinite(heading) ? ((heading % 360) + 360) % 360 : 0;
+  return `<span class="boat-marker-frame" style="--boat-status:${color};--boat-heading:${safeHeading}deg" aria-hidden="true"><img src="${src}" alt="" /></span>`;
 }
 
 export function CaribbeanMap({
@@ -118,7 +119,7 @@ export function CaribbeanMap({
       <div ref={containerRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-lg border border-border bg-card/95 px-3 py-2 shadow-md backdrop-blur">
         <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-primary">Whale Call operating area</p>
-        <p className="mt-1 text-xs font-semibold">OpenStreetMap · live ports · PNG fleet markers</p>
+        <p className="mt-1 text-xs font-semibold">OpenStreetMap · live ports · shared boat visuals</p>
       </div>
     </div>
   );

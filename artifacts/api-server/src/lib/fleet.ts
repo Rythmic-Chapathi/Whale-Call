@@ -393,15 +393,11 @@ export function haversineKm(a: Coordinate, b: Coordinate): number {
 }
 
 export async function findNearestRescueBoat(position: Coordinate): Promise<FleetBoat | undefined> {
-  const rescueBoats = (await listApiBoats({ emergencyEquipped: true }))
-    .filter((boat) => boat.status === "available" || boat.status === "en_route")
-    .sort((a, b) => {
-      if (a.status !== b.status) return a.status === "available" ? -1 : 1;
-      return haversineKm(position, a.position) - haversineKm(position, b.position);
-    });
-  if (rescueBoats[0]) return rescueBoats[0];
-  const availableBoats = await listApiBoats({ status: "available" });
-  return availableBoats.sort(
+  const rescueBoats = await listApiBoats({
+    emergencyEquipped: true,
+    status: "available",
+  });
+  return rescueBoats.sort(
     (a, b) => haversineKm(position, a.position) - haversineKm(position, b.position),
   )[0];
 }

@@ -6,8 +6,8 @@ import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } f
 import {
   Anchor, ArrowRight, BadgeCheck, Binoculars, BookOpen, Check, ChevronDown,
   CircleAlert, CircleCheck, Compass, Crosshair, HeartHandshake,
-  LifeBuoy, LogOut, Menu, Navigation, Phone, Radio, Sailboat, ShieldCheck,
-  Star, Waves, X,
+  LifeBuoy, LogOut, Menu, Navigation, Phone, Printer, Radio, Sailboat,
+  ShieldCheck, Star, Waves, X,
 } from 'lucide-react';
 import {
   BoatClass, BoatStatus, EmergencySituation, getGetEmergencyQueryKey, getGetFleetBoatQueryKey, getGetFleetSummaryQueryKey,
@@ -15,7 +15,7 @@ import {
   useCompleteTrip, useCreateEmergency, useCreateTrip, useGetEmergency, useGetFleetSummary,
   useGetFleetBoat, useGetTrip, useHealthCheck, useListFleet, useListIslands, useResolveEmergency,
 } from '@workspace/api-client-react';
-import type { Dock, FleetBoat, Island, Trip, TripInput } from '@workspace/api-client-react';
+import type { Dock, FleetBoat, Island, TripInput } from '@workspace/api-client-react';
 import NotFound from '@/pages/not-found';
 import { CaribbeanMap } from '@/components/CaribbeanMap';
 import { SupplyDispatchPage, SupplyRequestPage, SupplyTrackingPage } from '@/SupplyPages';
@@ -25,6 +25,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const logoSrc = `${basePath || ''}/whale-call-logo.png`;
+const boatImageSrc = `${basePath || ''}/fleet/whale-call-boat.png`;
 const shellNav = [
   { href: '/book', label: 'Choose a Destination', icon: Navigation },
   { href: '/supplies', label: 'Need Supplies?', icon: Sailboat },
@@ -63,6 +64,45 @@ function Logo({ compact = false, dark = false }: { compact?: boolean; dark?: boo
       <img src={logoSrc} alt="Whale Call" className={`shrink-0 object-contain ${compact ? 'h-9 w-9' : 'h-10 w-10 rounded-[14px]'}`} />
       {!compact && <span className={`font-display text-[21px] font-semibold tracking-[-.03em] ${dark ? 'text-sidebar-foreground' : 'text-foreground'}`}>Whale Call</span>}
     </Link>
+  );
+}
+
+function BoatVisual({
+  boat,
+  className = '',
+  imageClassName = '',
+  loading = 'lazy',
+}: {
+  boat: Pick<FleetBoat, 'name' | 'boatClass' | 'status' | 'emergencyEquipped'>;
+  className?: string;
+  imageClassName?: string;
+  loading?: 'eager' | 'lazy';
+}) {
+  const statusLabel = boat.status.replace('_', ' ');
+  return (
+    <div className={`relative overflow-hidden bg-[#dcefeb] ${className}`}>
+      <img
+        src={boatImageSrc}
+        alt={`${boat.name}, a ${boat.boatClass.replace('_', ' ')} boat`}
+        className={`h-full w-full object-contain ${imageClassName}`}
+        loading={loading}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-sidebar/35 via-transparent to-transparent" />
+      <span
+        className={`absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-card/90 px-2.5 py-1 font-mono-ui text-[9px] uppercase tracking-[.12em] text-foreground shadow-sm backdrop-blur ${
+          boat.status === BoatStatus.available ? 'text-primary' : ''
+        }`}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />
+        {statusLabel}
+      </span>
+      {boat.emergencyEquipped && (
+        <span className="absolute right-3 bottom-3 rounded-full bg-card/90 p-1.5 text-primary shadow-sm backdrop-blur" title="Rescue-equipped boat">
+          <ShieldCheck size={13} aria-hidden="true" />
+          <span className="sr-only">Rescue-equipped</span>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -225,7 +265,7 @@ function Stat({ label, value }: { label: string; value?: number }) { return <div
 function BoatCard({ boat }: { boat: FleetBoat }) {
   const [expanded, setExpanded] = useState(false);
   const { data: detail, isLoading } = useGetFleetBoat(boat.id, { query: { enabled: expanded, queryKey: getGetFleetBoatQueryKey(boat.id) } });
-  return <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}><div className="relative grid h-44 place-items-center overflow-hidden bg-gradient-to-br from-sky-100 to-amber-50"><img src={`${basePath || ''}/boat.png`} alt={`${boat.name}, a ${boat.boatClass.replace('_', ' ')}`} className="h-[86%] w-[86%] object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105" loading="lazy" /><div className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-card/90 px-3 py-1.5 font-mono-ui text-[9px] uppercase tracking-[.14em] shadow-sm backdrop-blur"><span className={`h-1.5 w-1.5 rounded-full ${boat.status === BoatStatus.available ? 'bg-accent' : 'bg-secondary'}`} />{boat.status.replace('_', ' ')}</div></div><div className="p-5"><div className="flex items-start justify-between"><div><h3 className="font-display text-2xl font-semibold">{boat.name}</h3><p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p></div>{boat.emergencyEquipped && <ShieldCheck className="text-accent" size={20} />}</div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span><div><p className="text-sm font-bold">{boat.assignedDriver?.name}</p><p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p></div></div><button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`}>{expanded ? 'Hide boat details' : 'View boat details'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} /></button>{expanded && <div className="mt-3 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid={`details-boat-${boat.id}`}>{isLoading ? 'Opening the boat log…' : `${detail?.assignedDriver?.languages?.join(', ') ?? 'Local crew'} · heading ${Math.round(detail?.heading ?? boat.heading)}° · ${detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0} trips completed`}</div>}</div></article>;
+  return <article className="group overflow-hidden rounded-[28px] border border-border bg-card shadow-sm transition-transform hover:-translate-y-1" data-testid={`card-boat-${boat.id}`}><BoatVisual boat={boat} className="h-44" imageClassName="transition-transform duration-500 group-hover:scale-105" /><div className="p-5"><div className="flex items-start justify-between"><div><h3 className="font-display text-2xl font-semibold">{boat.name}</h3><p className="mt-1 text-xs capitalize text-muted-foreground">{boat.boatClass.replace('_', ' ')} · {boat.capacity} passengers · {boat.payloadKg} kg cargo{boat.refrigerated ? ' · refrigerated' : ''}</p></div></div><div className="mt-5 flex items-center gap-3 border-t border-border pt-4"><span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{boat.assignedDriver?.name?.split(' ').map(n => n[0]).join('')}</span><div><p className="text-sm font-bold">{boat.assignedDriver?.name}</p><p className="text-xs text-muted-foreground"><Star className="mr-1 inline fill-secondary text-secondary" size={11} />{boat.assignedDriver?.rating?.toFixed(1)} · {boat.assignedDriver?.yearsActive} years on the water</p></div></div><button type="button" onClick={() => setExpanded(!expanded)} className="mt-4 text-xs font-bold text-primary" data-testid={`button-boat-details-${boat.id}`}>{expanded ? 'Hide boat details' : 'View boat details'} <ChevronDown className={`ml-1 inline transition-transform ${expanded ? 'rotate-180' : ''}`} size={14} /></button>{expanded && <div className="mt-3 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid={`details-boat-${boat.id}`}>{isLoading ? 'Opening the boat log…' : `${detail?.assignedDriver?.languages?.join(', ') ?? 'Local crew'} · heading ${Math.round(detail?.heading ?? boat.heading)}° · ${detail?.assignedDriver?.tripsCompleted ?? boat.assignedDriver?.tripsCompleted ?? 0} trips completed`}</div>}</div></article>;
 }
 
 function EmptyCard({ title, text }: { title: string; text: string }) { return <div className="rounded-[28px] border border-dashed border-border bg-card p-12 text-center"><Binoculars className="mx-auto text-accent" size={30} /><h3 className="mt-4 font-display text-2xl">{title}</h3><p className="mt-2 text-sm text-muted-foreground">{text}</p></div>; }
@@ -269,6 +309,97 @@ function IslandSelect({ label, value, islands, onChange, testId }: { label: stri
 function DockSelect({ label, value, docks, onChange, testId }: { label: string; value: string; docks: Dock[]; onChange: (s: string) => void; testId: string }) { return <label className="grid gap-2 text-sm font-bold">{label}<select required value={value} onChange={e => onChange(e.target.value)} className="focus-ring rounded-2xl border border-border bg-background px-4 py-3.5 font-semibold disabled:opacity-50" disabled={!docks.length} data-testid={testId}><option value="">{docks.length ? 'Select a dock' : 'Choose an island first'}</option>{docks.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>; }
 function SummaryLine({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between gap-4 p-4"><span className="text-xs text-muted-foreground">{label}</span><span className="text-right text-sm font-bold">{value}</span></div>; }
 
+function formatPurchaseDate(value: Date | string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function receiptNumber(tripId: string, requestedAt: Date | string) {
+  const year = new Date(requestedAt).getFullYear();
+  const suffix = tripId.replace(/^trip-/, '').slice(-7).toUpperCase();
+  return `WC-${year}-${suffix}`;
+}
+
+function TripReceipt({
+  trip,
+  pickupName,
+  pickupDockName,
+  destinationName,
+  destinationDockName,
+}: {
+  trip: {
+    id: string;
+    requestedAt: Date | string;
+    pickupDockId: string;
+    destinationDockId: string;
+    passengerCount: number;
+    price: number;
+    boat: FleetBoat;
+  };
+  pickupName: string;
+  pickupDockName: string;
+  destinationName: string;
+  destinationDockName: string;
+}) {
+  const total = trip.price;
+  return (
+    <section className="print-receipt overflow-hidden rounded-[30px] border border-border bg-card shadow-sm" data-testid="trip-receipt" aria-labelledby="receipt-title">
+      <div className="border-b border-border bg-sidebar px-6 py-6 text-sidebar-foreground sm:px-8">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <div className="flex items-center gap-3">
+              <img src={logoSrc} alt="" className="h-10 w-10 rounded-xl object-contain" />
+              <div>
+                <p className="font-mono-ui text-[9px] uppercase tracking-[.2em] text-secondary">Whale Call</p>
+                <h2 id="receipt-title" className="mt-1 font-display text-3xl font-semibold">Purchase receipt</h2>
+              </div>
+            </div>
+            <p className="mt-5 text-sm text-sidebar-foreground/65">Your crossing is safely logged.</p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/50">Receipt number</p>
+            <p className="mt-1 font-mono-ui text-sm font-bold text-secondary">{receiptNumber(trip.id, trip.requestedAt)}</p>
+            <p className="mt-2 text-xs text-sidebar-foreground/60">{formatPurchaseDate(trip.requestedAt)}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-6 p-6 sm:p-8">
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+          <div>
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">From</p>
+            <p className="mt-1 font-display text-2xl font-semibold">{pickupName}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{pickupDockName}</p>
+          </div>
+          <ArrowRight className="hidden text-accent sm:block" size={22} aria-hidden="true" />
+          <div className="sm:text-right">
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">To</p>
+            <p className="mt-1 font-display text-2xl font-semibold">{destinationName}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{destinationDockName}</p>
+          </div>
+        </div>
+        <div className="grid gap-3 border-y border-border py-5 sm:grid-cols-3">
+          <div className="flex items-center gap-3">
+            <BoatVisual boat={trip.boat} className="h-14 w-20 shrink-0 rounded-xl" imageClassName="p-1" />
+            <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Vessel</p><p className="mt-1 text-sm font-bold">{trip.boat.name}</p></div>
+          </div>
+          <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Captain</p><p className="mt-1 text-sm font-bold">{trip.boat.assignedDriver?.name ?? 'Whale Call crew'}</p><p className="mt-1 text-xs text-muted-foreground">{trip.boat.assignedDriver?.rating?.toFixed(1)} rating · {trip.boat.boatClass.replace('_', ' ')}</p></div>
+          <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Passengers</p><p className="mt-1 text-sm font-bold">{trip.passengerCount} {trip.passengerCount === 1 ? 'passenger' : 'passengers'}</p><p className="mt-1 text-xs text-muted-foreground">Crossing complete</p></div>
+        </div>
+        <div className="ml-auto w-full max-w-sm">
+          <div className="flex items-center justify-between py-2 text-sm"><span className="text-muted-foreground">Crossing fare</span><span className="font-semibold">${trip.price.toFixed(2)}</span></div>
+          <div className="mt-2 flex items-center justify-between border-t border-border pt-4"><span className="font-display text-2xl font-semibold">Total paid</span><span className="font-display text-3xl font-semibold text-primary">${total.toFixed(2)}</span></div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-accent/10 p-4">
+          <p className="text-xs leading-5 text-primary"><strong>Thank you for choosing Whale Call.</strong><br />Keep this receipt for your travel records.</p>
+          <Button kind="quiet" type="button" onClick={() => window.print()} data-testid="button-print-receipt"><Printer size={16} />Print receipt</Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TripPage() {
   const { data: islands } = useListIslands({ query: { queryKey: getListIslandsQueryKey() } });
   const [clock, setClock] = useState(Date.now());
@@ -282,14 +413,12 @@ function TripPage() {
   const liveEta = done ? 0 : Math.max(0, Math.ceil((new Date(trip.targetArrivalAt).getTime() - clock) / 60_000));
   const pickupName = islands?.find(island => island.id === trip.pickupIslandId)?.name ?? trip.pickupIslandId;
   const destinationName = islands?.find(island => island.id === trip.destinationIslandId)?.name ?? trip.destinationIslandId;
+  const pickupDockName = islands?.find(island => island.id === trip.pickupIslandId)?.docks.find(dock => dock.id === trip.pickupDockId)?.name ?? trip.pickupDockId;
+  const destinationDockName = islands?.find(island => island.id === trip.destinationIslandId)?.docks.find(dock => dock.id === trip.destinationDockId)?.name ?? trip.destinationDockId;
   return <AppShell><main className="mx-auto max-w-[1000px] px-5 py-12 lg:px-8 lg:py-16"><div className="flex flex-wrap items-start justify-between gap-6"><div><ModePill /><p className="mt-8 font-mono-ui text-[10px] uppercase tracking-[.2em] text-primary">Crossing {trip.id.slice(0, 8)}</p><h1 className="mt-3 font-display text-5xl font-semibold tracking-[-.05em]">{done ? 'Safe on shore.' : 'Your boat is on the way.'}</h1><p className="mt-4 text-sm text-muted-foreground">{done ? 'Thanks for travelling with us.' : `${liveEta} minutes until we reach you.`}</p></div><div className={`rounded-2xl px-4 py-3 font-mono-ui text-[10px] uppercase tracking-[.16em] ${done ? 'bg-accent/15 text-primary' : 'bg-secondary/25 text-primary'}`} data-testid="status-trip">{trip.status.replace('_', ' ')}</div></div>
-      <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[500px] overflow-hidden rounded-[30px] border border-border sm:min-h-[620px]"><div className="absolute left-[18%] top-[17%] h-32 w-44 rotate-6 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[12%] h-28 w-40 -rotate-12 rounded-[42%] bg-[#d5ae6d] island-shape" /><div className="absolute left-[28%] top-[35%] h-3 w-3 rounded-full bg-primary ring-8 ring-primary/15" /><div className="absolute bottom-[29%] right-[30%] h-3 w-3 rounded-full bg-destructive ring-8 ring-destructive/15" /><div className="absolute left-[29%] top-[34%] h-24 w-36 rotate-12"><img src={`${basePath || ''}/boat.png`} alt={`${trip.boat?.name ?? 'Boat'} on the water`} className="h-full w-full object-contain drop-shadow-xl" /></div><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-card/90 p-4 backdrop-blur"><div className="flex items-center justify-between"><p className="text-sm font-bold">{trip.boat?.name ?? 'Your boat'}</p><p className="font-mono-ui text-xs text-primary">{trip.distanceKm} km crossing</p></div><p className="mt-1 text-xs text-muted-foreground">Captain {trip.boat?.assignedDriver?.name ?? 'on duty'} · {trip.boat?.assignedDriver?.rating?.toFixed(1)} rating</p></div></div>
-      <div className="rounded-[30px] border border-border bg-card p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Passage details</p><div className="mt-6 grid gap-5"><SummaryLine label="From" value={pickupName} /><SummaryLine label="To" value={destinationName} /><SummaryLine label="Passengers" value={String(trip.passengerCount)} /><SummaryLine label="Fare" value={`$${trip.price.toFixed(2)}`} /></div>{!done && <Button className="mt-6 w-full" onClick={() => completeTrip.mutate({ tripId: trip.id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetTripQueryKey(trip.id) }) })} disabled={completeTrip.isPending} data-testid="button-complete-trip">{completeTrip.isPending ? 'Closing the log…' : 'Mark crossing complete'} <Check size={16} /></Button>}{done && <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 p-4 text-sm font-bold text-primary" data-testid="status-trip-complete"><CircleCheck size={19} /> Passage logged</div>}</div></div>{done && <TripReceipt trip={trip} pickupName={pickupName} destinationName={destinationName} />}</main></AppShell>;
-}
-
-function TripReceipt({ trip, pickupName, destinationName }: { trip: Trip; pickupName: string; destinationName: string }) {
-  const serviceFee = Number((trip.price * 0.08).toFixed(2));
-  return <section className="receipt mt-8 overflow-hidden rounded-[30px] border border-border bg-[#fffdf8] shadow-lg" data-testid="trip-receipt"><div className="flex flex-wrap items-start justify-between gap-4 border-b border-dashed border-border bg-secondary/15 p-7"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-primary">Whale Call receipt</p><h2 className="mt-2 font-display text-3xl font-semibold">Thanks for riding.</h2></div><div className="text-right font-mono-ui text-[10px] uppercase leading-5 text-muted-foreground"><p>{trip.id.toUpperCase()}</p><p>{new Date(trip.targetArrivalAt).toLocaleString()}</p></div></div><div className="grid gap-7 p-7 md:grid-cols-2"><div><p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Route</p><p className="mt-2 text-lg font-extrabold">{pickupName} → {destinationName}</p><p className="mt-1 text-sm text-muted-foreground">{trip.distanceKm} km · {trip.passengerCount} passenger{trip.passengerCount === 1 ? '' : 's'}</p><p className="mt-5 text-xs font-bold uppercase tracking-wide text-muted-foreground">Captain & boat</p><p className="mt-2 text-sm font-extrabold">{trip.boat.assignedDriver.name} · {trip.boat.name}</p><p className="mt-1 text-xs text-muted-foreground">★ {trip.boat.assignedDriver.rating.toFixed(1)} · {trip.boat.boatClass.replace('_', ' ')}</p></div><div className="rounded-2xl bg-white p-5 shadow-sm"><p className="flex justify-between text-sm"><span>Crossing</span><strong>${(trip.price - serviceFee).toFixed(2)}</strong></p><p className="mt-3 flex justify-between text-sm"><span>Service & coastwatch</span><strong>${serviceFee.toFixed(2)}</strong></p><p className="mt-5 flex justify-between border-t border-dashed pt-5 text-lg"><strong>Total</strong><strong>${trip.price.toFixed(2)}</strong></p><p className="mt-2 text-right text-[10px] text-muted-foreground">Payment recorded · demo checkout</p></div></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-border px-7 py-5"><p className="flex items-center gap-2 text-xs font-bold text-primary"><ShieldCheck size={15} /> Crossing closed · captain returned to service</p><button onClick={() => window.print()} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-5 text-sm font-bold"><BookOpen size={16} /> Print receipt</button></div></section>;
+     <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_.6fr]"><div className="map-grid relative min-h-[500px] overflow-hidden rounded-[30px] border border-border sm:min-h-[620px]"><div className="absolute left-[18%] top-[17%] h-32 w-44 rotate-6 rounded-[42%] bg-[#e5c283] island-shape" /><div className="absolute bottom-[17%] right-[12%] h-28 w-40 -rotate-12 rounded-[42%] bg-[#d5ae6d] island-shape" /><div className="absolute left-[28%] top-[35%] h-3 w-3 rounded-full bg-primary ring-8 ring-primary/15" /><div className="absolute bottom-[29%] right-[30%] h-3 w-3 rounded-full bg-destructive ring-8 ring-destructive/15" /><div className="absolute left-[30%] top-[35%] h-24 w-36 rotate-12"><img src={boatImageSrc} alt={`${trip.boat?.name ?? 'Your boat'} tracking position`} className="h-full w-full object-contain drop-shadow-xl" style={{ transform: `rotate(${trip.boat?.heading ?? 0}deg)` }} /></div><div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-card/90 p-4 backdrop-blur"><div className="flex items-center justify-between"><p className="text-sm font-bold">{trip.boat?.name ?? 'Your boat'}</p><p className="font-mono-ui text-xs text-primary">{trip.distanceKm} km crossing</p></div><p className="mt-1 text-xs text-muted-foreground">Captain {trip.boat?.assignedDriver?.name ?? 'on duty'} · {trip.boat?.assignedDriver?.rating?.toFixed(1)} rating</p></div></div>
+       <div className="rounded-[30px] border border-border bg-card p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-primary">Passage details</p><div className="mt-6 grid gap-5"><SummaryLine label="From" value={pickupName} /><SummaryLine label="To" value={destinationName} /><SummaryLine label="Passengers" value={String(trip.passengerCount)} /><SummaryLine label="Fare" value={`$${trip.price.toFixed(2)}`} /></div>{!done && <Button className="mt-6 w-full" onClick={() => completeTrip.mutate({ tripId: trip.id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetTripQueryKey(trip.id) }) })} disabled={completeTrip.isPending} data-testid="button-complete-trip">{completeTrip.isPending ? 'Closing the log…' : 'Mark crossing complete'} <Check size={16} /></Button>}{done && <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 p-4 text-sm font-bold text-primary" data-testid="status-trip-complete"><CircleCheck size={19} /> Passage logged</div>}</div></div>
+     {done && <div className="mt-6"><TripReceipt trip={trip} pickupName={pickupName} pickupDockName={pickupDockName} destinationName={destinationName} destinationDockName={destinationDockName} /></div>}</main></AppShell>;
 }
 
 function EmergencyPage() {
